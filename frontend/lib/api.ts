@@ -56,6 +56,17 @@ export async function generateJob(items: any[]) {
   return { status: res.status, data };
 }
 
+export async function previewItem(item: any) {
+  const url = `${API_BASE}/api/jobs/preview`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ item })
+  });
+  if (!res.ok) throw new Error(`preview failed: ${res.status}`);
+  return res.json();
+}
+
 export async function ping() {
   return { ok: true };
 }
