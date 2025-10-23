@@ -8,13 +8,13 @@ class Settings(BaseSettings):
     JOBS_DIR: Path = DATA_DIR / "jobs"
     PREVIEWS_DIR: Path = DATA_DIR / "previews"
     UPLOADS_DIR: Path = DATA_DIR / "storage" / "uploads"
-    PHOTOS_DIR: Path = Path("/data/photos")
+    PHOTOS_DIR: Path = Path("/tmp/photos")
     DEFAULT_SEED: int = 42
     DOWNLOAD_CONCURRENCY: int = 4
     DOWNLOAD_TIMEOUT_S: int = 30
     MAX_ZIP_MB: int = 25
     USER_AGENT: str = "NBNE-Ingest/1.0"
-    DOWNLOAD_TMP_DIR: Path = Path("/data/tmp")
+    DOWNLOAD_TMP_DIR: Path = Path("/tmp/downloads")
     ALLOW_EXTERNAL_DOWNLOADS: bool = True
     CLEAN_PHOTOS_ON_START: bool = True
     # SKU map reload (seconds). 0 disables background reload.
@@ -28,9 +28,10 @@ class Settings(BaseSettings):
     S3_SECRET_ACCESS_KEY: str | None = None
     PRESIGN_EXPIRES_S: int = 3600
     # SKU list CSV (container path; mount host ./assets to /app/assets)
-    SKULIST_PATH: Path = Path("/app/assets/SKULIST.csv")
-    # Graphics directory (container path; images embedded into SVG)
-    GRAPHICS_DIR: Path = Path("/app/assets/graphics")
+    # On Render, use relative path from backend directory
+    SKULIST_PATH: Path = BASE_DIR.parent / "assets" / "SKULIST.csv"
+    # Graphics directory (images embedded into SVG)
+    GRAPHICS_DIR: Path = BASE_DIR.parent / "assets" / "graphics"
     # Auth0 / OIDC
     AUTH0_DOMAIN: str | None = None
     AUTH0_AUDIENCE: str | None = None
@@ -45,9 +46,16 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# ensure directories exist
-settings.JOBS_DIR.mkdir(parents=True, exist_ok=True)
-settings.PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
-settings.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-settings.DOWNLOAD_TMP_DIR.mkdir(parents=True, exist_ok=True)
-settings.PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+# ensure directories exist (with error handling for read-only filesystems)
+try:
+    settings.JOBS_DIR.mkdir(parents=True, exist_ok=True)
+    settings.PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
+    settings.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+except (PermissionError, OSError):
+    pass  # May be read-only in production
+
+try:
+    settings.DOWNLOAD_TMP_DIR.mkdir(parents=True, exist_ok=True)
+    settings.PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+except (PermissionError, OSError):
+    pass  # /tmp should be writable
