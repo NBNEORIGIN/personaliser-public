@@ -48,3 +48,19 @@ try:
     sku_map.init()
 except Exception:
     pass
+
+# Health and status endpoints
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {"status": "healthy", "service": "personaliser-api"}
+
+@app.get("/status")
+async def status():
+    """Status endpoint with version info"""
+    return {
+        "status": "operational",
+        "service": "personaliser-api",
+        "version": "1.0.0",
+        "storage": settings.STORAGE_BACKEND
+    }
