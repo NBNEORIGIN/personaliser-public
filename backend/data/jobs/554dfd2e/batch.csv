@@ -1,0 +1,4 @@
+job_id,bed_index,position_index,item_global_index,item_id,order_ref,template_id,x_mm,y_mm,w_mm,h_mm,line_1,line_2,line_3
+554dfd2e,1,0,0,,026-9691952-7693140,PLAQUE-140x90-V1,20.0,5.0,140.0,90.0,In loving memory 0,John Doe 0,1950-2024
+554dfd2e,1,1,1,,026-9691952-7693141,PLAQUE-140x90-V1,165.0,5.0,140.0,90.0,In loving memory 1,John Doe 1,1950-2024
+554dfd2e,1,2,2,,026-9691952-7693142,PLAQUE-140x90-V1,310.0,5.0,140.0,90.0,In loving memory 2,John Doe 2,1950-2024

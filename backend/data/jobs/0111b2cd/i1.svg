@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140mm" height="90mm" viewBox="0 0 140 90">
+  <rect x="0" y="0" width="140" height="90" rx="6" ry="6" fill="white" stroke="#ccc"/>
+  <g font-family="DejaVu Sans" fill="#000" text-anchor="middle">
+    <text x="70.0" y="35.0" font-size="6">In loving memory</text>
+    <text x="70.0" y="45.0" font-size="5">Jane K Newman</text>
+    <text x="70.0" y="55.0" font-size="6">1951-2024</text>
+  </g>
+</svg>

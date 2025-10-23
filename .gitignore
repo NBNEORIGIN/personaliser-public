@@ -1,0 +1,43 @@
+# --- Node ---
+node_modules/
+.next/
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+.vercel/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+dist/
+build/
+
+# --- OS/editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Env & secrets ---
+.env
+.env.*
+!*.example
+
+# --- Local data/artifacts ---
+/backend/app/data/
+/backend/app/app.db
+/data/
+/static/
+/jobs/
+
+# --- Tests cache ---
+.pytest_cache/
+coverage/
+.coverage
+
+# --- Docker ---
+**/.dockerignore

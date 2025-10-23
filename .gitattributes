@@ -1,0 +1,6 @@
+# Use LFS for large binary assets if present
+assets/graphics/* filter=lfs diff=lfs merge=lfs -text
+assets/**/*.png filter=lfs diff=lfs merge=lfs -text
+assets/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+assets/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+backend/app/data/** filter=lfs diff=lfs merge=lfs -text

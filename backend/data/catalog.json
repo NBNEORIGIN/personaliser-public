@@ -1,0 +1,36 @@
+{
+  "templates": [
+    {
+      "id": "PLAQUE-140x90-V1",
+      "name": "Plaque 140x90 v1",
+      "processor": {"name": "uv_regular", "version": "1.0.0"},
+      "w": 140,
+      "h": 90,
+      "maxLen": 30,
+      "requiresPhoto": false,
+      "options": {
+        "fields": [
+          {"id": "line_1", "label": "Line 1", "type": "text", "maxLen": 32},
+          {"id": "line_2", "label": "Line 2", "type": "text", "maxLen": 32},
+          {"id": "line_3", "label": "Line 3", "type": "text", "maxLen": 32}
+        ]
+      }
+    },
+    {
+      "id": "PLAQUE-LARGE-METAL-V1",
+      "name": "Plaque Large Metal v1",
+      "processor": {"name": "uv_regular", "version": "1.0.0"},
+      "w": 200,
+      "h": 140,
+      "maxLen": 30,
+      "requiresPhoto": false,
+      "options": {
+        "fields": [
+          {"id": "line_1", "label": "Line 1", "type": "text", "maxLen": 32},
+          {"id": "line_2", "label": "Line 2", "type": "text", "maxLen": 32},
+          {"id": "line_3", "label": "Line 3", "type": "text", "maxLen": 32}
+        ]
+      }
+    }
+  ]
+}
