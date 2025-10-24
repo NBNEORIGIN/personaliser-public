@@ -87,17 +87,88 @@ export default function OrdersTable(){
     }finally{ setLoadingGen(false); }
   }
 
+  const buttonStyle = {
+    padding: '10px 20px',
+    borderRadius: 8,
+    border: 'none',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    color: 'white',
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontSize: 14,
+    transition: 'transform 0.2s, box-shadow 0.2s',
+    boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+  };
+
+  const disabledButtonStyle = {
+    ...buttonStyle,
+    opacity: 0.5,
+    cursor: 'not-allowed'
+  };
+
   return (
     <section>
-      <h2 style={{marginBottom:8}}>Amazon TXT → Batch</h2>
-      <div style={{display:'flex', gap:12, alignItems:'flex-start'}}>
-        <div>
+      <h2 style={{
+        marginBottom: 24,
+        fontSize: 22,
+        fontWeight: 700,
+        color: '#1a202c',
+        borderBottom: '2px solid #e2e8f0',
+        paddingBottom: 12
+      }}>Amazon Order Import</h2>
+      
+      <div style={{display:'grid', gridTemplateColumns: '400px 1fr', gap:24, alignItems:'start'}}>
+        {/* Left: Input Section */}
+        <div style={{
+          background: '#f7fafc',
+          padding: 20,
+          borderRadius: 12,
+          border: '1px solid #e2e8f0'
+        }}>
+          <h3 style={{marginTop: 0, fontSize: 16, fontWeight: 600, color: '#2d3748', marginBottom: 12}}>Import Data</h3>
           <div>
-            <textarea ref={taRef} rows={8} cols={60} placeholder={"Paste Amazon TXT (tab-delimited) incl. headers such as: amazon-order-id\tsku\tquantity\tcustomized-url"}></textarea>
+            <textarea 
+              ref={taRef} 
+              rows={10} 
+              style={{
+                width: '100%',
+                padding: 12,
+                borderRadius: 8,
+                border: '2px solid #e2e8f0',
+                fontSize: 13,
+                fontFamily: 'monospace',
+                resize: 'vertical',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              placeholder={"Paste Amazon TXT (tab-delimited) incl. headers such as:\namazon-order-id\tsku\tquantity\tcustomized-url"}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+            />
           </div>
-          <div style={{marginTop:6, display:'flex', gap:8}}>
-            <button disabled={loadingIngest} onClick={onIngestFromPaste}>{loadingIngest? 'Parsing…':'Ingest from Paste'}</button>
-            <input type="file" accept=".txt" onChange={onUploadFile}/>
+          <div style={{marginTop:12, display:'flex', flexDirection: 'column', gap:10}}>
+            <button 
+              disabled={loadingIngest} 
+              onClick={onIngestFromPaste}
+              style={loadingIngest ? disabledButtonStyle : buttonStyle}
+              onMouseEnter={(e) => !loadingIngest && (e.currentTarget.style.transform = 'translateY(-2px)')}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              {loadingIngest? '⏳ Parsing…':'📥 Ingest from Paste'}
+            </button>
+            <div style={{textAlign: 'center', color: '#718096', fontSize: 13, margin: '8px 0'}}>or</div>
+            <label style={{
+              ...buttonStyle,
+              background: 'white',
+              color: '#667eea',
+              border: '2px solid #667eea',
+              display: 'block',
+              textAlign: 'center',
+              cursor: 'pointer'
+            }}>
+              📁 Upload TXT File
+              <input type="file" accept=".txt" onChange={onUploadFile} style={{display: 'none'}}/>
+            </label>
           </div>
           {warnings.length>0 && (
             <div style={{marginTop:8}}>
@@ -110,78 +181,103 @@ export default function OrdersTable(){
             </div>
           )}
         </div>
+        
+        {/* Right: Results Section */}
         <div style={{flex:1}}>
-          <h3>Items ({items.length})</h3>
-          {items.length===0 ? (
-            <div style={{opacity:0.8}}>No items yet. Paste TXT or upload a file to ingest.</div>
-          ) : (
-            <table border={1} cellPadding={6} style={{width:'100%', borderCollapse:'collapse'}}>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>order_ref</th>
-                  <th>sku</th>
-                  <th>template</th>
-                  <th>graphics_key</th>
-                  <th>colour</th>
-                  <th>type</th>
-                  <th>decoration</th>
-                  <th>theme</th>
-                  <th>photo</th>
-                  <th>line_1</th>
-                  <th>line_2</th>
-                  <th>line_3</th>
-                  <th>warnings</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((it, idx)=>{
-                  const map = Object.fromEntries((it.lines||[]).map(l=>[l.id, l.value]));
-                  return (
-                    <tr key={idx}>
-                      <td>{idx+1}</td>
-                      <td>{it.order_ref}</td>
-                      <td>{it.sku||''}</td>
-                      <td>{it.template_id||''}</td>
-                      <td>{it.graphics_key||''}</td>
-                      <td>{it.colour || '—'}</td>
-                      <td>{it.product_type || '—'}</td>
-                      <td>{it.decoration_type || '—'}</td>
-                      <td>{it.theme || '—'}</td>
-                      <td>
-                        { (()=>{ const url = it.photo_asset_url || ''; const name = it.photo_filename || (url ? url.split('/').pop() || '' : '');
-                          const abs = url ? (url.startsWith('http') ? url : `${API_BASE}${url}`) : '';
-                          return url ? (
-                            <div style={{display:'flex', alignItems:'center', gap:8}}>
-                              <img src={abs} alt="photo" style={{height:40, objectFit:'cover', borderRadius:4}} />
-                              <span title={name} style={{fontSize:12, color:'#666', maxWidth:160, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
-                                {name}
-                              </span>
-                            </div>
-                          ) : '—'; })() }
-                      </td>
-                      <td>{map['line_1']||''}</td>
-                      <td>{map['line_2']||''}</td>
-                      <td>{map['line_3']||''}</td>
-                      <td>
-                        <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
-                          {((it.decoration_type||'').toLowerCase()==='photo' && !(it.photo_asset_url||it.photo_asset_id)) && (
-                            <span style={{background:'#ef4444', color:'#fff', padding:'2px 6px', borderRadius:4, fontSize:12}}>PHOTO_MISSING</span>
-                          )}
-                          {((it.decoration_type||'').toLowerCase()==='graphic' && !(it.graphics_key)) && (
-                            <span style={{background:'#f59e0b', color:'#fff', padding:'2px 6px', borderRadius:4, fontSize:12}}>GRAPHIC_MISSING</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-          <div style={{marginTop:10}}>
-            <button disabled={loadingGen || items.length===0} onClick={onGenerate}>{loadingGen? 'Generating…':'Generate Job'}</button>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
+            <h3 style={{margin: 0, fontSize: 18, fontWeight: 600, color: '#2d3748'}}>
+              Items <span style={{
+                background: items.length > 0 ? '#48bb78' : '#cbd5e0',
+                color: 'white',
+                padding: '2px 10px',
+                borderRadius: 12,
+                fontSize: 14,
+                fontWeight: 700,
+                marginLeft: 8
+              }}>{items.length}</span>
+            </h3>
+            {items.length > 0 && (
+              <button 
+                disabled={loadingGen} 
+                onClick={onGenerate}
+                style={loadingGen ? disabledButtonStyle : buttonStyle}
+                onMouseEnter={(e) => !loadingGen && (e.currentTarget.style.transform = 'translateY(-2px)')}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                {loadingGen? '⚙️ Generating…':'✨ Generate Job'}
+              </button>
+            )}
           </div>
+          {items.length===0 ? (
+            <div style={{
+              padding: 40,
+              textAlign: 'center',
+              background: '#f7fafc',
+              borderRadius: 12,
+              border: '2px dashed #cbd5e0',
+              color: '#718096'
+            }}>
+              <div style={{fontSize: 48, marginBottom: 12}}>📋</div>
+              <div style={{fontSize: 16, fontWeight: 500}}>No items yet</div>
+              <div style={{fontSize: 14, marginTop: 8}}>Paste TXT or upload a file to get started</div>
+            </div>
+          ) : (
+            <div style={{overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 8}}>
+              <table style={{width:'100%', borderCollapse:'collapse', fontSize: 13}}>
+                <thead>
+                  <tr style={{background: '#f7fafc'}}>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>#</th>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>Order Ref</th>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>SKU</th>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>Graphics</th>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>Colour</th>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>Type</th>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>Line 1</th>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>Line 2</th>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>Line 3</th>
+                    <th style={{padding: 12, textAlign: 'left', fontWeight: 600, color: '#4a5568', borderBottom: '2px solid #e2e8f0'}}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((it, idx)=>{
+                    const map = Object.fromEntries((it.lines||[]).map(l=>[l.id, l.value]));
+                    const hasIssue = ((it.decoration_type||'').toLowerCase()==='photo' && !(it.photo_asset_url||it.photo_asset_id)) ||
+                                     ((it.decoration_type||'').toLowerCase()==='graphic' && !(it.graphics_key));
+                    return (
+                      <tr key={idx} style={{borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? 'white' : '#fafafa'}}>
+                        <td style={{padding: 12, color: '#718096'}}>{idx+1}</td>
+                        <td style={{padding: 12, fontWeight: 500, color: '#2d3748'}}>{it.order_ref}</td>
+                        <td style={{padding: 12, color: '#4a5568', fontFamily: 'monospace', fontSize: 12}}>{it.sku||'—'}</td>
+                        <td style={{padding: 12, color: '#4a5568'}}>{it.graphics_key||'—'}</td>
+                        <td style={{padding: 12}}>
+                          <span style={{
+                            background: it.colour ? '#e6fffa' : '#f7fafc',
+                            color: it.colour ? '#047857' : '#718096',
+                            padding: '4px 8px',
+                            borderRadius: 4,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            textTransform: 'uppercase'
+                          }}>{it.colour || 'None'}</span>
+                        </td>
+                        <td style={{padding: 12, color: '#4a5568', fontSize: 12}}>{it.product_type || '—'}</td>
+                        <td style={{padding: 12, color: '#2d3748'}}>{map['line_1']||'—'}</td>
+                        <td style={{padding: 12, color: '#2d3748'}}>{map['line_2']||'—'}</td>
+                        <td style={{padding: 12, color: '#2d3748'}}>{map['line_3']||'—'}</td>
+                        <td style={{padding: 12}}>
+                          {hasIssue ? (
+                            <span style={{background:'#fed7d7', color:'#c53030', padding:'4px 8px', borderRadius:4, fontSize:11, fontWeight:600}}>⚠️ Issue</span>
+                          ) : (
+                            <span style={{background:'#c6f6d5', color:'#22543d', padding:'4px 8px', borderRadius:4, fontSize:11, fontWeight:600}}>✓ Ready</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
           {bedPreview && (
             <div style={{marginTop:12}}>
               {/\.png$/i.test(bedPreview) ? (
