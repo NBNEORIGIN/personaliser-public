@@ -140,31 +140,34 @@ def run(items: List[Any], cfg: dict):
         # Try embedded graphic by graphics_key or graphic
         gkey = getattr(it, "graphics_key", None) or getattr(it, "graphic", None) or ""
         if gkey:
-            key_raw = str(gkey)
-            candidates = []
-            # If key includes extension, try as-is first
-            candidates.append(settings.GRAPHICS_DIR / key_raw)
-            # Try with .png/.PNG if no extension
-            if "." not in key_raw:
-                candidates.append(settings.GRAPHICS_DIR / f"{key_raw}.png")
-                candidates.append(settings.GRAPHICS_DIR / f"{key_raw}.PNG")
-            # Sanitized variants (lowercase, replace spaces with underscores)
-            base = key_raw.rsplit(".", 1)[0]
-            base_s = base.strip().replace(" ", "_")
-            base_l = base.lower().replace(" ", "_")
-            for b in {base, base_s, base_l}:
-                candidates.append(settings.GRAPHICS_DIR / f"{b}.png")
-                candidates.append(settings.GRAPHICS_DIR / f"{b}.PNG")
+            try:
+                key_raw = str(gkey)
+                candidates = []
+                # If key includes extension, try as-is first
+                candidates.append(settings.GRAPHICS_DIR / key_raw)
+                # Try with .png/.PNG if no extension
+                if "." not in key_raw:
+                    candidates.append(settings.GRAPHICS_DIR / f"{key_raw}.png")
+                    candidates.append(settings.GRAPHICS_DIR / f"{key_raw}.PNG")
+                # Sanitized variants (lowercase, replace spaces with underscores)
+                base = key_raw.rsplit(".", 1)[0]
+                base_s = base.strip().replace(" ", "_")
+                base_l = base.lower().replace(" ", "_")
+                for b in {base, base_s, base_l}:
+                    candidates.append(settings.GRAPHICS_DIR / f"{b}.png")
+                    candidates.append(settings.GRAPHICS_DIR / f"{b}.PNG")
 
-            href = None
-            for p in candidates:
-                href = embed_image_as_data_uri(p)
+                href = None
+                for p in candidates:
+                    href = embed_image_as_data_uri(p)
+                    if href:
+                        break
                 if href:
-                    break
-            if href:
-                dwg.add(dwg.image(href=href, insert=(f"{x_mm}mm", f"{y_mm}mm"), size=(f"{MEM_W_MM}mm", f"{MEM_H_MM}mm")))
-            else:
-                warnings.append("GRAPHIC_FILE_NOT_FOUND")
+                    dwg.add(dwg.image(href=href, insert=(f"{x_mm}mm", f"{y_mm}mm"), size=(f"{MEM_W_MM}mm", f"{MEM_H_MM}mm")))
+                else:
+                    warnings.append("GRAPHIC_FILE_NOT_FOUND")
+            except Exception as e:
+                warnings.append(f"GRAPHIC_ERROR: {str(e)}")
 
         # Text lines
         l1, l2, l3 = _lines_map(it)
