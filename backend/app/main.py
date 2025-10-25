@@ -10,7 +10,13 @@ app = FastAPI(title="Bed Optimised Batch Production API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://nbne.uk",
+        "https://www.nbne.uk",
+        "https://personaliser.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
