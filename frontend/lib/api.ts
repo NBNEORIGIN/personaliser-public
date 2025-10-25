@@ -20,6 +20,7 @@ export type IngestItem = {
   product_type?: string | null
   decoration_type?: string | null
   theme?: string | null
+  processor?: string | null
   warnings?: QaWarning[]
 }
 
