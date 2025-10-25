@@ -59,7 +59,12 @@ export default function OrdersTable(){
       colour: it.colour || '',
       product_type: it.product_type || '',
       decoration_type: it.decoration_type || '',
-      theme: it.theme || ''
+      theme: it.theme || '',
+      processor: it.processor || '',
+      // Pass through photo fields
+      photo_url: it.photo_asset_url || '',
+      photo_asset_id: it.photo_asset_id || '',
+      requires_photo: it.decoration_type?.toLowerCase() === 'photo'
     }));
   }
 

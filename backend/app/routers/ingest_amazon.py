@@ -201,12 +201,15 @@ async def ingest_amazon(
             photo_via = pdata.get("photo_via") or "-"
             if isinstance(p_path, Path) and p_path.exists():
                 stored = f"{order_id}-{idx}-{(p_name or p_path.name)}"
+                print(f"[INGEST] Saving photo: {p_path} -> {stored}", flush=True)
                 if settings.STORAGE_BACKEND.lower() == "s3":
                     photo_asset = upload_photo_and_presign(p_path, stored)
                 else:
                     photo_asset = save_photo_local(p_path, stored)
+                print(f"[INGEST] Photo saved, URL: {photo_asset}", flush=True)
                 photo_filename = p_name or p_path.name
-        except Exception:
+        except Exception as e:
+            print(f"[INGEST] Failed to save photo: {e}", flush=True)
             photo_asset = None
 
         # If nothing parsed, add explicit warning
