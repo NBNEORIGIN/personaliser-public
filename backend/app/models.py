@@ -39,6 +39,7 @@ class OrderItem(BaseModel):
     product_type: Optional[str] = None
     decoration_type: Optional[str] = None
     theme: Optional[str] = None
+    processor: Optional[str] = None
 
 class Rect(BaseModel):
     id: str
@@ -80,6 +81,7 @@ class IngestItem(BaseModel):
     product_type: Optional[str] = None  # from CSV TYPE
     decoration_type: Optional[str] = None
     theme: Optional[str] = None
+    processor: Optional[str] = None
 
 class IngestResponse(BaseModel):
     items: List[IngestItem]

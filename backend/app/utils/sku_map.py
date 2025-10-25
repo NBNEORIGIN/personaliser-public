@@ -17,6 +17,7 @@ class SkuMeta(TypedDict, total=False):
     TYPE: Optional[str]
     DecorationType: Optional[str]
     Theme: Optional[str]
+    Processor: Optional[str]
 
 
 _SKU_CACHE: Optional[Dict[str, Dict[str, str]]] = None
@@ -94,7 +95,7 @@ def get_meta_for_sku(sku: str) -> SkuMeta:
         "requires_photo": (str(info.get("requires_photo") or "").lower() in {"1","true","yes","y"}),
         "default_type": (info.get("default_type") or None),
     }
-    for k in ("COLOUR","TYPE","DecorationType","Theme"):
+    for k in ("COLOUR","TYPE","DecorationType","Theme","Processor"):
         v = info.get(k)
         meta[k] = v if v else None
     return meta

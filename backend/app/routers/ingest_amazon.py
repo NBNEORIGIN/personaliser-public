@@ -238,6 +238,7 @@ async def ingest_amazon(
             product_type=sku_meta.get("TYPE"),
             decoration_type=sku_meta.get("DecorationType"),
             theme=sku_meta.get("Theme"),
+            processor=sku_meta.get("Processor"),
         )
         items.append(item)
 

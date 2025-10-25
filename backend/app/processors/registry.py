@@ -30,10 +30,19 @@ def key_for_item(item) -> str:
     """
     Route items to appropriate processor based on SKU attributes.
     
-    Photo Stakes: COLOUR in (Copper, Gold, Silver, Stone, Marble) + Type=Regular Stake + DecorationType=Photo
-    Regular Stakes: DecorationType=Graphic
-    Text Only: Everything else
+    Priority:
+    1. Explicit Processor column in SKULIST.csv (if specified)
+    2. Logic-based routing (fallback):
+       - Photo Stakes: COLOUR in (Copper, Gold, Silver, Stone, Marble) + Type=Regular Stake + DecorationType=Photo
+       - Regular Stakes: DecorationType=Graphic
+       - Text Only: Everything else
     """
+    # Check for explicit processor assignment from SKU metadata
+    explicit_processor = (getattr(item, "processor", None) or "").strip()
+    if explicit_processor:
+        return explicit_processor
+    
+    # Fallback to logic-based routing
     dt = (getattr(item, "decoration_type", None) or "").lower()
     product_type = (getattr(item, "product_type", None) or "").lower()
     colour = (getattr(item, "colour", None) or "").lower()
