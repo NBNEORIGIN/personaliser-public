@@ -1,0 +1,1 @@
+from . import photo_stakes_pdf_v1

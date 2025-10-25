@@ -1,0 +1,52 @@
+{
+  "name": "Photo Stakes Regular",
+  "description": "Template for regular photo memorial stakes (140x90mm)",
+  "page_width_mm": 439.8,
+  "page_height_mm": 289.9,
+  "memorial_width_mm": 140.0,
+  "memorial_height_mm": 90.0,
+  "cols": 3,
+  "rows": 3,
+  "x_offset_mm": 9.9,
+  "y_offset_mm": 9.95,
+  "image_fields": [
+    {
+      "name": "photo",
+      "x_offset_mm": 7.7,
+      "y_offset_mm": 10.6,
+      "width_mm": 50.5,
+      "height_mm": 68.8,
+      "border_width_mm": 3.65,
+      "corner_radius_mm": 6.0
+    }
+  ],
+  "text_fields": [
+    {
+      "name": "line_1",
+      "line_id": "line_1",
+      "x_offset_mm": 95.0,
+      "y_offset_mm": 62.0,
+      "font": "Helvetica",
+      "font_size_pt": 17,
+      "align": "center"
+    },
+    {
+      "name": "line_2",
+      "line_id": "line_2",
+      "x_offset_mm": 95.0,
+      "y_offset_mm": 45.0,
+      "font": "Helvetica-Bold",
+      "font_size_pt": 25,
+      "align": "center"
+    },
+    {
+      "name": "line_3",
+      "line_id": "line_3",
+      "x_offset_mm": 95.0,
+      "y_offset_mm": 28.0,
+      "font": "Helvetica",
+      "font_size_pt": 13,
+      "align": "center"
+    }
+  ]
+}

@@ -52,7 +52,7 @@ def key_for_item(item) -> str:
     if dt == "photo" and product_type == "regular stake":
         allowed_colours = ["copper", "gold", "silver", "stone", "marble"]
         if colour in allowed_colours:
-            return "photo_stakes_v1"
+            return "photo_stakes_pdf_v1"  # Use PDF processor for better reliability
     
     # Regular graphic stakes
     if dt == "graphic":
