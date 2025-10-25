@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     JOBS_DIR: Path = DATA_DIR / "jobs"
     PREVIEWS_DIR: Path = DATA_DIR / "previews"
     UPLOADS_DIR: Path = DATA_DIR / "storage" / "uploads"
-    PHOTOS_DIR: Path = Path("/tmp/photos")
+    PHOTOS_DIR: Path = DATA_DIR / "photos"
     DEFAULT_SEED: int = 42
     DOWNLOAD_CONCURRENCY: int = 4
     DOWNLOAD_TIMEOUT_S: int = 30
