@@ -26,6 +26,12 @@ export type IngestItem = {
 export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE as string) ||
   (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'http://localhost:8000');
 
+// Debug logging
+if (typeof window !== 'undefined') {
+  console.log('API_BASE configured as:', API_BASE);
+  console.log('NEXT_PUBLIC_API_BASE env:', process.env.NEXT_PUBLIC_API_BASE);
+}
+
 export async function ingestAmazon(input: { text?: string, file?: File }) {
   const url = `${API_BASE}/api/ingest/amazon`;
   if (input.file) {
@@ -47,13 +53,20 @@ export async function ingestAmazon(input: { text?: string, file?: File }) {
 
 export async function generateJob(items: any[]) {
   const url = `${API_BASE}/api/jobs/generate`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items, machine_id: 'MUTOH-UJF-461' })
-  });
-  const data = await res.json().catch(() => ({}));
-  return { status: res.status, data };
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ items, machine_id: 'MUTOH-UJF-461' })
+    });
+    const data = await res.json().catch(() => ({}));
+    return { status: res.status, data };
+  } catch (error) {
+    console.error('Generate job error:', error);
+    throw new Error(`Failed to connect to API: ${error instanceof Error ? error.message : 'Network error'}`);
+  }
 }
 
 export async function previewItem(item: any) {
