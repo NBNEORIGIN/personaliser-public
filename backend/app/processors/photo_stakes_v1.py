@@ -109,7 +109,7 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
     photo_url = getattr(item, 'photo_asset_url', None) or getattr(item, 'photo_url', None)
     photo_id = getattr(item, 'photo_asset_id', None)
     
-    print(f"[PHOTO] Item {idx}: photo_url={photo_url}, photo_id={photo_id}")
+    print(f"[PHOTO] Item {idx}: photo_url={photo_url}, photo_id={photo_id}", flush=True)
     
     if photo_url:
         # Resolve photo path
@@ -118,16 +118,16 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
             # Local photo from storage
             filename = photo_url.split('/')[-1]
             photo_path = settings.PHOTOS_DIR / filename
-            print(f"[PHOTO] Resolved local path: {photo_path}, exists={photo_path.exists()}")
+            print(f"[PHOTO] Resolved local path: {photo_path}, exists={photo_path.exists()}", flush=True)
         elif photo_id:
             # Try to find by ID
             photo_path = settings.PHOTOS_DIR / f"{photo_id}.jpg"
-            print(f"[PHOTO] Trying by ID: {photo_path}, exists={photo_path.exists()}")
+            print(f"[PHOTO] Trying by ID: {photo_path}, exists={photo_path.exists()}", flush=True)
         
         if photo_path and photo_path.exists():
             photo_data = _embed_image(photo_path)
             if photo_data:
-                print(f"[PHOTO] Successfully embedded photo for item {idx}")
+                print(f"[PHOTO] Successfully embedded photo for item {idx}", flush=True)
                 photo = dwg.image(
                     href=photo_data,
                     insert=(f"{frame_x}mm", f"{frame_y}mm"),
@@ -136,9 +136,9 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
                 )
                 dwg.add(photo)
             else:
-                print(f"[PHOTO] Failed to embed image data for item {idx}")
+                print(f"[PHOTO] Failed to embed image data for item {idx}", flush=True)
         else:
-            print(f"[PHOTO] Photo path not found for item {idx}: {photo_path}")
+            print(f"[PHOTO] Photo path not found for item {idx}: {photo_path}", flush=True)
     
     # Add text lines
     l1, l2, l3 = _text_lines_map(item)
