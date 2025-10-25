@@ -78,7 +78,17 @@ def _load_if_needed() -> Dict[str, Dict[str, str]]:
 def get_meta_for_sku(sku: str) -> SkuMeta:
     data = _load_if_needed()
     # try both preserved and no-space variants
-    info = data.get(_norm(sku)) or data.get(_norm_no_space(sku)) or {}
+    info = data.get(_norm(sku)) or data.get(_norm_no_space(sku))
+    
+    # If no exact match, try prefix match (for SKUs like "OM009005L" matching "OM009005L Slate")
+    if not info:
+        sku_lower = _norm(sku)
+        for key, value in data.items():
+            if key.startswith(sku_lower + " ") or key.startswith(sku_lower):
+                info = value
+                break
+    
+    info = info or {}
     meta: SkuMeta = {
         "template_id": (info.get("template_id") or None),
         "requires_photo": (str(info.get("requires_photo") or "").lower() in {"1","true","yes","y"}),

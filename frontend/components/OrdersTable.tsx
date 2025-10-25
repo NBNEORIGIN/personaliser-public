@@ -260,7 +260,7 @@ export default function OrdersTable(){
                             textTransform: 'uppercase'
                           }}>{it.colour || 'None'}</span>
                         </td>
-                        <td style={{padding: 12, color: '#4a5568', fontSize: 12}}>{it.product_type || '—'}</td>
+                        <td style={{padding: 12, color: '#4a5568', fontSize: 12}}>{it.decoration_type || '—'}</td>
                         <td style={{padding: 12, color: '#2d3748'}}>{map['line_1']||'—'}</td>
                         <td style={{padding: 12, color: '#2d3748'}}>{map['line_2']||'—'}</td>
                         <td style={{padding: 12, color: '#2d3748'}}>{map['line_3']||'—'}</td>
