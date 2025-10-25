@@ -43,6 +43,7 @@ export default function OrdersTable(){
     return <span style={{background:color, color:'white', padding:'2px 6px', borderRadius:4, fontSize:12}}>{w.code}</span>
   }
 
+  // Convert IngestItems to OrderItems for job generation
   function toOrderItems(its:IngestItem[]){
     return its.map(it=>({
       template_id: it.template_id || 'PLAQUE-140x90-V1',
