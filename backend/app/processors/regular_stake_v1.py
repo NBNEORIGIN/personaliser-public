@@ -93,6 +93,7 @@ def run(items: List[Any], cfg: dict):
     job_id: str = cfg["job_id"]
     out_dir: Path = cfg["output_dir"]
     out_dir.mkdir(parents=True, exist_ok=True)
+    warnings: List[str] = []  # Initialize warnings list at the start
 
     # Filter eligible items by enrichment: TYPE='Regular Stake', DecorationType='Graphic', COLOUR in set
     def _norm(s):
@@ -241,7 +242,6 @@ def run(items: List[Any], cfg: dict):
     # Publish
     svg_url = storage.put_artifact(job_id, svg_path)
     csv_url = storage.put_artifact(job_id, csv_path)
-    warnings: List[str] = []
     # Warn if any eligible item had missing graphics or unresolved files
     for it in place:
         gkey = getattr(it, "graphics_key", None) or getattr(it, "graphic", None) or ""
