@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import List, Tuple, Any
 from pathlib import Path
+from datetime import datetime
 import svgwrite
 
 from ..settings import settings
@@ -236,10 +237,11 @@ def run(items: List[Any], cfg: dict):
         )
     )
 
-    # Save deterministically with processor-specific names
-    svg_path = out_dir / "regular_stakes_bed_1.svg"
+    # Save with date and processor name
+    date_str = datetime.now().strftime("%Y%m%d")
+    svg_path = out_dir / f"{date_str}_regular_stake_v1_bed_1.svg"
     dwg.saveas(svg_path)
-    csv_path = out_dir / "regular_stakes_batch.csv"
+    csv_path = out_dir / f"{date_str}_regular_stake_v1_batch.csv"
     write_batch_csv(batch_rows, csv_path)
 
     # Publish

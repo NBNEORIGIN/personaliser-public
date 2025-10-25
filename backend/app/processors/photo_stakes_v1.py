@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import List, Tuple
 from pathlib import Path
+from datetime import datetime
 import svgwrite
 import base64
 
@@ -213,11 +214,12 @@ def run(items: List[IngestItem], cfg: dict) -> Tuple[str, str, List[str]]:
         fill='blue'
     ))
     
-    # Save artifacts with processor-specific names
-    svg_path = out_dir / "photo_stakes_bed_1.svg"
+    # Save with date and processor name
+    date_str = datetime.now().strftime("%Y%m%d")
+    svg_path = out_dir / f"{date_str}_photo_stakes_v1_bed_1.svg"
     dwg.saveas(svg_path)
     
-    csv_path = out_dir / "photo_stakes_batch.csv"
+    csv_path = out_dir / f"{date_str}_photo_stakes_v1_batch.csv"
     write_batch_csv(rows_csv, csv_path)
     
     # Upload to storage

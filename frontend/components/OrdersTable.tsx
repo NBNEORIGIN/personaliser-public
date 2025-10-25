@@ -278,19 +278,70 @@ export default function OrdersTable(){
               </table>
             </div>
           )}
-          {bedPreview && (
-            <div style={{marginTop:12}}>
-              {/\.png$/i.test(bedPreview) ? (
-                <img src={bedPreview} width={480} alt="bed preview"/>
-              ) : (
-                <a href={bedPreview} target="_blank" rel="noreferrer">Open bed SVG</a>
-              )}
-              <div style={{marginTop:6}}>
-                <strong>Artifacts:</strong>
-                <ul>
-                  {artifacts.map((a)=> (<li key={a}><a href={a} target="_blank" rel="noreferrer">{a}</a></li>))}
-                </ul>
-              </div>
+          {artifacts.length > 0 && (
+            <div style={{marginTop:20, padding:20, background:'#f7fafc', borderRadius:8}}>
+              <h3 style={{marginBottom:16, fontSize:18, fontWeight:600}}>Generated Artifacts</h3>
+              <table style={{width:'100%', borderCollapse:'collapse', background:'white', borderRadius:8, overflow:'hidden', boxShadow:'0 1px 3px rgba(0,0,0,0.1)'}}>
+                <thead>
+                  <tr style={{background:'#edf2f7', borderBottom:'2px solid #e2e8f0'}}>
+                    <th style={{padding:12, textAlign:'left', fontSize:12, fontWeight:600, color:'#4a5568'}}>Type</th>
+                    <th style={{padding:12, textAlign:'left', fontSize:12, fontWeight:600, color:'#4a5568'}}>Processor</th>
+                    <th style={{padding:12, textAlign:'left', fontSize:12, fontWeight:600, color:'#4a5568'}}>File</th>
+                    <th style={{padding:12, textAlign:'center', fontSize:12, fontWeight:600, color:'#4a5568'}}>Preview</th>
+                    <th style={{padding:12, textAlign:'center', fontSize:12, fontWeight:600, color:'#4a5568'}}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {artifacts.map((url, idx) => {
+                    const filename = url.split('/').pop() || '';
+                    const isSvg = /\.svg$/i.test(filename);
+                    const isCsv = /\.csv$/i.test(filename);
+                    const processorMatch = filename.match(/_([a-z_]+_v\d+)_/);
+                    const processor = processorMatch ? processorMatch[1] : 'unknown';
+                    const type = isSvg ? 'SVG' : isCsv ? 'CSV' : 'File';
+                    
+                    return (
+                      <tr key={idx} style={{borderBottom:'1px solid #e2e8f0'}}>
+                        <td style={{padding:12}}>
+                          <span style={{
+                            background: isSvg ? '#e6fffa' : '#fef5e7',
+                            color: isSvg ? '#047857' : '#d97706',
+                            padding:'4px 8px',
+                            borderRadius:4,
+                            fontSize:11,
+                            fontWeight:600
+                          }}>{type}</span>
+                        </td>
+                        <td style={{padding:12, fontSize:12, color:'#4a5568', fontFamily:'monospace'}}>{processor}</td>
+                        <td style={{padding:12, fontSize:11, color:'#718096', fontFamily:'monospace', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{filename}</td>
+                        <td style={{padding:12, textAlign:'center'}}>
+                          {isSvg && (
+                            <a href={url} target="_blank" rel="noreferrer" style={{color:'#667eea', textDecoration:'none', fontSize:12}}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display:'inline-block', verticalAlign:'middle'}}>
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                              </svg>
+                              <span style={{marginLeft:4}}>View</span>
+                            </a>
+                          )}
+                        </td>
+                        <td style={{padding:12, textAlign:'center'}}>
+                          <a href={url} download style={{
+                            background:'#667eea',
+                            color:'white',
+                            padding:'6px 12px',
+                            borderRadius:4,
+                            fontSize:11,
+                            fontWeight:600,
+                            textDecoration:'none',
+                            display:'inline-block'
+                          }}>Download</a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
