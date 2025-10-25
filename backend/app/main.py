@@ -67,7 +67,7 @@ async def status():
     return {
         "status": "operational",
         "service": "personaliser-api",
-        "version": "1.0.1",  # Updated to track deployment
+        "version": "1.0.2",  # PDF processor enabled
         "storage": settings.STORAGE_BACKEND,
-        "timestamp": "2025-10-25T11:56:00Z"
+        "timestamp": "2025-10-25T16:57:00Z"
     }
