@@ -38,9 +38,10 @@ def key_for_item(item) -> str:
     product_type = (getattr(item, "product_type", None) or "").lower()
     colour = (getattr(item, "colour", None) or "").lower()
     
-    # Photo stakes: specific colours + regular/large stake + photo decoration
-    if dt == "photo" and product_type in ["regular stake", "large stake"]:
-        allowed_colours = ["copper", "gold", "silver", "stone", "marble", "slate", "black"]
+    # Photo stakes: specific colours + regular stake + photo decoration
+    # Note: Large Stakes and Slate/Black colors will have separate processors in future
+    if dt == "photo" and product_type == "regular stake":
+        allowed_colours = ["copper", "gold", "silver", "stone", "marble"]
         if colour in allowed_colours:
             return "photo_stakes_v1"
     
