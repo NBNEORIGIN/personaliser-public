@@ -11,6 +11,7 @@ from ..processors import uv_regular_v1  # ensure registration
 from ..processors import text_only_v1  # batch stub registration
 from ..processors import photo_basic_v1  # batch stub registration
 from ..processors import regular_stake_v1  # regular stake batch registration
+from ..processors import photo_stakes_v1  # photo stakes batch registration
 from ..processors.registry import get as get_processor
 from ..processors.registry import get_batch as get_batch_processor
 from ..processors.registry import key_for_item
