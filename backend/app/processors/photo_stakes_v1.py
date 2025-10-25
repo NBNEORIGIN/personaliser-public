@@ -11,12 +11,17 @@ from ..utils import storage
 from .registry import register_batch
 from .base import write_batch_csv
 
-# Bed and memorial dimensions (same as regular stakes)
-BED_W_MM = 480.0
-BED_H_MM = 290.0
+# Page and memorial dimensions (matching regular stakes)
+PAGE_W_MM = 439.8
+PAGE_H_MM = 289.9
 MEMORIAL_W_MM = 140.0
-MEMORIAL_H_MM = 75.0
+MEMORIAL_H_MM = 90.0
 COLS = 3
+ROWS = 3
+BATCH_SIZE = COLS * ROWS
+# Centered grid layout
+X_OFF_MM = (PAGE_W_MM - (MEMORIAL_W_MM * COLS)) / 2.0
+Y_OFF_MM = (PAGE_H_MM - (MEMORIAL_H_MM * ROWS)) / 2.0
 
 # Photo-specific dimensions (from working example)
 PHOTO_W_MM = 50.5  # Photo frame width
@@ -28,9 +33,11 @@ PHOTO_CORNER_RADIUS_MM = 6.0
 PHOTO_LEFT_MARGIN_MM = 7.7
 TEXT_RIGHT_SHIFT_MM = 30.0  # Space between photo and text
 
-# Conversion factor
-PX_PER_MM = 3.78
-PT_TO_MM = 0.3528
+# Text sizing (matching regular stakes)
+PT_TO_MM = 0.2645833333  # Legacy factor from regular stakes
+LINE1_PT = 17
+LINE2_PT = 25
+LINE3_PT = 13
 
 
 def _embed_image(path: Path) -> str | None:
@@ -150,7 +157,7 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
             insert=(f"{text_center_x}mm", f"{y_mm + 28}mm"),
             text_anchor="middle",
             font_family="Georgia, serif",
-            font_size=f"{17 * PT_TO_MM}mm",
+            font_size=f"{LINE1_PT * PT_TO_MM}mm",
             fill="black"
         ))
     
@@ -161,7 +168,7 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
             insert=(f"{text_center_x}mm", f"{y_mm + 45}mm"),
             text_anchor="middle",
             font_family="Georgia, serif",
-            font_size=f"{25 * PT_TO_MM}mm",
+            font_size=f"{LINE2_PT * PT_TO_MM}mm",
             fill="black"
         ))
     
@@ -172,7 +179,7 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
             insert=(f"{text_center_x}mm", f"{y_mm + 62}mm"),
             text_anchor="middle",
             font_family="Georgia, serif",
-            font_size=f"{13 * PT_TO_MM}mm",
+            font_size=f"{LINE3_PT * PT_TO_MM}mm",
             fill="black"
         ))
 
@@ -185,20 +192,20 @@ def run(items: List[IngestItem], cfg: dict) -> Tuple[str, str, List[str]]:
     
     # Create SVG document
     dwg = svgwrite.Drawing(
-        size=(f"{BED_W_MM}mm", f"{BED_H_MM}mm"),
-        profile="full"
+        size=(f"{PAGE_W_MM}mm", f"{PAGE_H_MM}mm"),
+        viewBox=f"0 0 {PAGE_W_MM} {PAGE_H_MM}"
     )
     
     rows_csv: List[dict] = []
     
     # Process up to 3 items per bed
-    for idx, item in enumerate(items[:3]):
+    for idx, item in enumerate(items):
+        if idx >= BATCH_SIZE:
+            break
         col = idx % COLS
         row = idx // COLS
-        
-        x_mm = col * MEMORIAL_W_MM
-        y_mm = row * MEMORIAL_H_MM
-        
+        x_mm = X_OFF_MM + col * MEMORIAL_W_MM
+        y_mm = Y_OFF_MM + row * MEMORIAL_H_MM
         _add_photo_memorial(dwg, x_mm, y_mm, item, idx)
         
         l1, l2, l3 = _text_lines_map(item)
