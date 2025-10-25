@@ -52,6 +52,7 @@ def key_for_item(item) -> str:
     if dt == "photo" and product_type == "regular stake":
         allowed_colours = ["copper", "gold", "silver", "stone", "marble"]
         if colour in allowed_colours:
+            print(f"[REGISTRY DEBUG] Routing photo stake to: photo_stakes_pdf_v1", flush=True)
             return "photo_stakes_pdf_v1"  # Use PDF processor for better reliability
     
     # Regular graphic stakes
