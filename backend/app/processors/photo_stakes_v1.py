@@ -105,16 +105,19 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
     ))
     
     # Embed and add photo if available
-    if item.photo_asset_url:
+    photo_url = getattr(item, 'photo_asset_url', None) or getattr(item, 'photo_url', None)
+    photo_id = getattr(item, 'photo_asset_id', None)
+    
+    if photo_url:
         # Resolve photo path
         photo_path = None
-        if item.photo_asset_url.startswith('/static/photos/'):
+        if photo_url.startswith('/static/photos/'):
             # Local photo from storage
-            filename = item.photo_asset_url.split('/')[-1]
+            filename = photo_url.split('/')[-1]
             photo_path = settings.PHOTOS_DIR / filename
-        elif item.photo_asset_id:
+        elif photo_id:
             # Try to find by ID
-            photo_path = settings.PHOTOS_DIR / f"{item.photo_asset_id}.jpg"
+            photo_path = settings.PHOTOS_DIR / f"{photo_id}.jpg"
         
         if photo_path and photo_path.exists():
             photo_data = _embed_image(photo_path)
@@ -183,15 +186,16 @@ def run(items: List[IngestItem], cfg: dict) -> Tuple[str, str, List[str]]:
         _add_photo_memorial(dwg, x_mm, y_mm, item, idx)
         
         l1, l2, l3 = _text_lines_map(item)
+        photo_url = getattr(item, 'photo_asset_url', None) or getattr(item, 'photo_url', None) or ""
         rows_csv.append({
-            "order_ref": item.order_ref,
-            "sku": item.sku or "",
-            "graphics_key": item.graphics_key or "",
-            "colour": item.colour or "",
-            "type": item.product_type or "",
-            "decoration": item.decoration_type or "",
-            "theme": item.theme or "",
-            "photo_url": item.photo_asset_url or "",
+            "order_ref": getattr(item, 'order_ref', ''),
+            "sku": getattr(item, 'sku', '') or "",
+            "graphics_key": getattr(item, 'graphics_key', '') or "",
+            "colour": getattr(item, 'colour', '') or "",
+            "type": getattr(item, 'product_type', '') or "",
+            "decoration": getattr(item, 'decoration_type', '') or "",
+            "theme": getattr(item, 'theme', '') or "",
+            "photo_url": photo_url,
             "line_1": l1,
             "line_2": l2,
             "line_3": l3,
