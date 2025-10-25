@@ -191,10 +191,9 @@ def run(items: List[IngestItem], cfg: dict) -> Tuple[str, str, List[str]]:
     out_dir.mkdir(parents=True, exist_ok=True)
     
     # Create SVG document
-    dwg = svgwrite.Drawing(
-        size=(f"{PAGE_W_MM}mm", f"{PAGE_H_MM}mm"),
-        viewBox=f"0 0 {PAGE_W_MM} {PAGE_H_MM}"
-    )
+    dwg = svgwrite.Drawing(size=(f"{PAGE_W_MM}mm", f"{PAGE_H_MM}mm"), profile="full")
+    # White background
+    dwg.add(dwg.rect(insert=(0, 0), size=(f"{PAGE_W_MM}mm", f"{PAGE_H_MM}mm"), fill="white"))
     
     rows_csv: List[dict] = []
     
