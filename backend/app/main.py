@@ -61,6 +61,7 @@ async def status():
     return {
         "status": "operational",
         "service": "personaliser-api",
-        "version": "1.0.0",
-        "storage": settings.STORAGE_BACKEND
+        "version": "1.0.1",  # Updated to track deployment
+        "storage": settings.STORAGE_BACKEND,
+        "timestamp": "2025-10-25T11:56:00Z"
     }
