@@ -79,6 +79,8 @@ def generate_job(req: GenerateRequest, user=Depends(get_current_user)):
     groups: dict[str, List[OrderItem]] = {}
     for it in req.items:
         k = key_for_item(it)
+        # Debug logging
+        print(f"[ROUTING] Item {it.order_ref}: decoration_type={getattr(it, 'decoration_type', None)}, product_type={getattr(it, 'product_type', None)}, colour={getattr(it, 'colour', None)} -> processor={k}")
         groups.setdefault(k, []).append(it)
 
     # If all items are text_only_v1 AND all of (decoration_type, graphics_key, product_type) are empty/None for all,
@@ -179,10 +181,13 @@ def generate_job(req: GenerateRequest, user=Depends(get_current_user)):
     artifacts: List[str] = []
     out_dir = settings.JOBS_DIR / job_id
     cfg = {"job_id": job_id, "output_dir": out_dir, "seed": req.seed or settings.DEFAULT_SEED}
+    print(f"[BATCH] Processing {len(groups)} processor groups: {list(groups.keys())}")
     for k, items in groups.items():
+        print(f"[BATCH] Processor '{k}' handling {len(items)} items")
         try:
             proc = get_batch_processor(k)
         except KeyError:
+            print(f"[BATCH] ERROR: Processor '{k}' not found in registry")
             # Unknown processor: skip
             continue
         svg_url, csv_url, warns = proc(items, cfg)
