@@ -18,16 +18,15 @@ MEMORIAL_W_MM = 140.0
 MEMORIAL_H_MM = 75.0
 COLS = 3
 
-# Photo-specific dimensions
-PHOTO_BORDER_MM = 2.5  # Black border around photo
-PHOTO_INNER_W_MM = 50.5 - (2 * PHOTO_BORDER_MM)  # Photo display area
-PHOTO_INNER_H_MM = 68.8 - (2 * PHOTO_BORDER_MM)
-PHOTO_FRAME_W_MM = 50.5  # Outer frame including border
-PHOTO_FRAME_H_MM = 68.8
+# Photo-specific dimensions (from working example)
+PHOTO_W_MM = 50.5  # Photo frame width
+PHOTO_H_MM = 68.8  # Photo frame height
+PHOTO_CLIP_W_MM = 50.378  # Black background clip width
+PHOTO_CLIP_H_MM = 68.901  # Black background clip height
+PHOTO_BORDER_STROKE_MM = 3.65  # Border stroke width
 PHOTO_CORNER_RADIUS_MM = 6.0
 PHOTO_LEFT_MARGIN_MM = 7.7
-TEXT_LEFT_MARGIN_MM = 5.0  # Space between photo and text
-TEXT_RIGHT_MARGIN_MM = 5.0  # Space from right edge
+TEXT_RIGHT_SHIFT_MM = 30.0  # Space between photo and text
 
 # Conversion factor
 PX_PER_MM = 3.78
@@ -51,47 +50,19 @@ def _text_lines_map(it: IngestItem) -> Tuple[str, str, str]:
     return mp.get("line_1", ""), mp.get("line_2", ""), mp.get("line_3", "")
 
 
-def _wrap_text(text: str, max_chars_per_line: int = 12) -> List[str]:
-    """Wrap text to fit within memorial, breaking at word boundaries"""
-    if not text:
-        return []
-    words = text.split()
-    lines = []
-    current_line = []
-    current_length = 0
-    
-    for word in words:
-        word_length = len(word)
-        # +1 for space
-        if current_length + word_length + len(current_line) > max_chars_per_line and current_line:
-            lines.append(' '.join(current_line))
-            current_line = [word]
-            current_length = word_length
-        else:
-            current_line.append(word)
-            current_length += word_length
-    
-    if current_line:
-        lines.append(' '.join(current_line))
-    
-    return lines
-
-
 def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: IngestItem, idx: int):
     """Add a single photo memorial to the SVG"""
-    # Calculate photo frame position (centered vertically)
+    # Calculate positions (matching working example)
+    clip_x = x_mm + PHOTO_LEFT_MARGIN_MM
+    clip_y = y_mm + (MEMORIAL_H_MM - PHOTO_CLIP_H_MM) / 2
+    
     frame_x = x_mm + PHOTO_LEFT_MARGIN_MM
-    frame_y = y_mm + (MEMORIAL_H_MM - PHOTO_FRAME_H_MM) / 2
+    frame_y = y_mm + (MEMORIAL_H_MM - PHOTO_H_MM) / 2
     
-    # Calculate inner photo position (with border)
-    photo_x = frame_x + PHOTO_BORDER_MM
-    photo_y = frame_y + PHOTO_BORDER_MM
-    
-    # Calculate text area (right side of memorial)
-    text_left_x = frame_x + PHOTO_FRAME_W_MM + TEXT_LEFT_MARGIN_MM
-    text_right_x = x_mm + MEMORIAL_W_MM - TEXT_RIGHT_MARGIN_MM
-    text_width_mm = text_right_x - text_left_x
-    text_center_x = (text_left_x + text_right_x) / 2
+    # Calculate text center position
+    text_x = frame_x + PHOTO_W_MM + TEXT_RIGHT_SHIFT_MM
+    text_area_width = MEMORIAL_W_MM - (text_x - x_mm) - TEXT_RIGHT_SHIFT_MM
+    text_center_x = text_x + text_area_width / 2 - (PHOTO_CLIP_W_MM / 2)
     
     # Add memorial outline (red rounded rectangle)
     dwg.add(dwg.rect(
@@ -104,24 +75,34 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
         stroke_width=f"{0.1}mm"
     ))
     
-    # Add black border frame (filled black rounded rectangle)
+    # Add black background clip (filled black rounded rectangle)
     dwg.add(dwg.rect(
-        insert=(f"{frame_x}mm", f"{frame_y}mm"),
-        size=(f"{PHOTO_FRAME_W_MM}mm", f"{PHOTO_FRAME_H_MM}mm"),
+        insert=(f"{clip_x}mm", f"{clip_y}mm"),
+        size=(f"{PHOTO_CLIP_W_MM}mm", f"{PHOTO_CLIP_H_MM}mm"),
         rx=f"{PHOTO_CORNER_RADIUS_MM}mm",
         ry=f"{PHOTO_CORNER_RADIUS_MM}mm",
         fill='black'
     ))
     
-    # Create clip path for inner photo area
+    # Create clip path for photo
     clip_id = f'clip_{idx}'
-    inner_radius = max(0, PHOTO_CORNER_RADIUS_MM - PHOTO_BORDER_MM)
     clip_path = dwg.defs.add(dwg.clipPath(id=clip_id))
     clip_path.add(dwg.rect(
-        insert=(f"{photo_x}mm", f"{photo_y}mm"),
-        size=(f"{PHOTO_INNER_W_MM}mm", f"{PHOTO_INNER_H_MM}mm"),
-        rx=f"{inner_radius}mm",
-        ry=f"{inner_radius}mm"
+        insert=(f"{clip_x}mm", f"{clip_y}mm"),
+        size=(f"{PHOTO_CLIP_W_MM}mm", f"{PHOTO_CLIP_H_MM}mm"),
+        rx=f"{PHOTO_CORNER_RADIUS_MM}mm",
+        ry=f"{PHOTO_CORNER_RADIUS_MM}mm"
+    ))
+    
+    # Add photo border (black stroke)
+    dwg.add(dwg.rect(
+        insert=(f"{frame_x}mm", f"{frame_y}mm"),
+        size=(f"{PHOTO_W_MM}mm", f"{PHOTO_H_MM}mm"),
+        rx=f"{PHOTO_CORNER_RADIUS_MM}mm",
+        ry=f"{PHOTO_CORNER_RADIUS_MM}mm",
+        fill='none',
+        stroke='black',
+        stroke_width=f"{PHOTO_BORDER_STROKE_MM}mm"
     ))
     
     # Embed and add photo if available
@@ -149,8 +130,8 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
                 print(f"[PHOTO] Successfully embedded photo for item {idx}", flush=True)
                 photo = dwg.image(
                     href=photo_data,
-                    insert=(f"{photo_x}mm", f"{photo_y}mm"),
-                    size=(f"{PHOTO_INNER_W_MM}mm", f"{PHOTO_INNER_H_MM}mm"),
+                    insert=(f"{frame_x}mm", f"{frame_y}mm"),
+                    size=(f"{PHOTO_W_MM}mm", f"{PHOTO_H_MM}mm"),
                     clip_path=f'url(#{clip_id})'
                 )
                 dwg.add(photo)
@@ -159,59 +140,41 @@ def _add_photo_memorial(dwg: svgwrite.Drawing, x_mm: float, y_mm: float, item: I
         else:
             print(f"[PHOTO] Photo path not found for item {idx}: {photo_path}", flush=True)
     
-    # Add text lines with wrapping
+    # Add text lines (matching working example positions and sizes)
     l1, l2, l3 = _text_lines_map(item)
     
-    # Field 1: Top right (small, near top)
+    # Field 1: Top (17pt, 28mm from top)
     if l1:
-        wrapped_l1 = _wrap_text(l1, max_chars_per_line=12)
-        start_y = y_mm + 12
-        line_height_mm = 3.5
-        for i, line in enumerate(wrapped_l1):
-            dwg.add(dwg.text(
-                line,
-                insert=(f"{text_center_x}mm", f"{start_y + i * line_height_mm}mm"),
-                text_anchor="middle",
-                dominant_baseline="middle",
-                font_family="Georgia, serif",
-                font_size="9pt",
-                font_weight="bold",
-                fill="black"
-            ))
+        dwg.add(dwg.text(
+            l1,
+            insert=(f"{text_center_x}mm", f"{y_mm + 28}mm"),
+            text_anchor="middle",
+            font_family="Georgia, serif",
+            font_size=f"{17 * PT_TO_MM}mm",
+            fill="black"
+        ))
     
-    # Field 2: Center right (larger, centered)
+    # Field 2: Center (25pt, 45mm from top)
     if l2:
-        wrapped_l2 = _wrap_text(l2, max_chars_per_line=10)
-        total_height = len(wrapped_l2) * 4.5
-        start_y = y_mm + (MEMORIAL_H_MM / 2) - (total_height / 2) + 2
-        line_height_mm = 4.5
-        for i, line in enumerate(wrapped_l2):
-            dwg.add(dwg.text(
-                line,
-                insert=(f"{text_center_x}mm", f"{start_y + i * line_height_mm}mm"),
-                text_anchor="middle",
-                dominant_baseline="middle",
-                font_family="Georgia, serif",
-                font_size="12pt",
-                font_weight="bold",
-                fill="black"
-            ))
+        dwg.add(dwg.text(
+            l2,
+            insert=(f"{text_center_x}mm", f"{y_mm + 45}mm"),
+            text_anchor="middle",
+            font_family="Georgia, serif",
+            font_size=f"{25 * PT_TO_MM}mm",
+            fill="black"
+        ))
     
-    # Field 3: Bottom right (small, near bottom)
+    # Field 3: Bottom (13pt, 62mm from top)
     if l3:
-        wrapped_l3 = _wrap_text(l3, max_chars_per_line=14)
-        start_y = y_mm + MEMORIAL_H_MM - 8 - (len(wrapped_l3) - 1) * 3
-        line_height_mm = 3
-        for i, line in enumerate(wrapped_l3):
-            dwg.add(dwg.text(
-                line,
-                insert=(f"{text_center_x}mm", f"{start_y + i * line_height_mm}mm"),
-                text_anchor="middle",
-                dominant_baseline="middle",
-                font_family="Georgia, serif",
-                font_size="7pt",
-                fill="black"
-            ))
+        dwg.add(dwg.text(
+            l3,
+            insert=(f"{text_center_x}mm", f"{y_mm + 62}mm"),
+            text_anchor="middle",
+            font_family="Georgia, serif",
+            font_size=f"{13 * PT_TO_MM}mm",
+            fill="black"
+        ))
 
 
 def run(items: List[IngestItem], cfg: dict) -> Tuple[str, str, List[str]]:
