@@ -236,10 +236,10 @@ def run(items: List[Any], cfg: dict):
         )
     )
 
-    # Save deterministically
-    svg_path = out_dir / "bed_1.svg"
+    # Save deterministically with processor-specific names
+    svg_path = out_dir / "regular_stakes_bed_1.svg"
     dwg.saveas(svg_path)
-    csv_path = out_dir / "batch.csv"
+    csv_path = out_dir / "regular_stakes_batch.csv"
     write_batch_csv(batch_rows, csv_path)
 
     # Publish
