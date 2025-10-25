@@ -228,8 +228,8 @@ def run(items: List[IngestItem], cfg: dict) -> Tuple[str, str, List[str]]:
     
     # Add reference marker (blue square at bottom-right)
     ref_size_mm = 0.1
-    ref_x = BED_W_MM - ref_size_mm
-    ref_y = 289.8 - 0.011 - ref_size_mm
+    ref_x = PAGE_W_MM - ref_size_mm
+    ref_y = PAGE_H_MM - 0.1 - ref_size_mm
     dwg.add(dwg.rect(
         insert=(f"{ref_x}mm", f"{ref_y}mm"),
         size=(f"{ref_size_mm}mm", f"{ref_size_mm}mm"),
