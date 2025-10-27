@@ -204,7 +204,7 @@ def run(items: List[IngestItem], cfg: dict) -> Tuple[str, str, List[str]]:
     
     # Write CSV
     csv_path = out_dir / f"{date_str}_photo_stakes_pdf_v1_batch.csv"
-    write_batch_csv(csv_path, rows_csv)
+    write_batch_csv(rows_csv, csv_path)
     
     # Return URLs
     pdf_url = f"/static/jobs/{job_id}/{pdf_path.name}"
