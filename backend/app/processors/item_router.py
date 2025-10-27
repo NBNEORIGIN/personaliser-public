@@ -3,6 +3,8 @@ from typing import Callable, Dict, Tuple, List
 from ..models import OrderItem
 from ..models import IngestItem
 
+print("[ITEM_ROUTER] Module loaded - using PDF processor for photo stakes", flush=True)
+
 RenderFn = Callable[[OrderItem], str]
 
 _registry: Dict[Tuple[str, str], RenderFn] = {}
