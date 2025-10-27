@@ -156,14 +156,13 @@ def _add_regular_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Any,
             
             if graphic_path:
                 try:
-                    # Use lazy=2 to reduce memory usage
+                    # Draw graphic - fill entire memorial area
                     c.drawImage(
                         str(graphic_path),
                         x_mm * mm, y_mm * mm,
                         width=MEMORIAL_W_MM * mm,
                         height=MEMORIAL_H_MM * mm,
-                        preserveAspectRatio=True,
-                        mask='auto',
+                        preserveAspectRatio=False,  # Stretch to fill
                         lazy=2  # Memory optimization: load image on-demand
                     )
                     print(f"[REGULAR PDF] Successfully embedded graphic for item {idx}: {graphic_path.name}", flush=True)
@@ -182,15 +181,17 @@ def _add_regular_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Any,
     
     c.setFillColorRGB(0, 0, 0)
     
-    # Line 1
+    # Line 1 (PDF coords: flip Y from top to bottom)
     if l1:
         c.setFont(FONT_NAME, LINE1_PT)
-        c.drawCentredString(cx_mm * mm, (y_mm + LINE1_Y_MM) * mm, l1)
+        y1 = y_mm + (MEMORIAL_H_MM - LINE1_Y_MM)  # Flip: bottom-up coords
+        c.drawCentredString(cx_mm * mm, y1 * mm, l1)
     
     # Line 2
     if l2:
         c.setFont(FONT_NAME, LINE2_PT)
-        c.drawCentredString(cx_mm * mm, (y_mm + LINE2_Y_MM) * mm, l2)
+        y2 = y_mm + (MEMORIAL_H_MM - LINE2_Y_MM)  # Flip: bottom-up coords
+        c.drawCentredString(cx_mm * mm, y2 * mm, l2)
     
     # Line 3 (with wrapping)
     if l3:
@@ -200,7 +201,8 @@ def _add_regular_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Any,
         # Calculate vertical spacing
         line_spacing_mm = 4.0
         total_height = len(lines3) * line_spacing_mm
-        start_y = y_mm + LINE3_Y_MM - (total_height / 2.0)
+        y3_base = y_mm + (MEMORIAL_H_MM - LINE3_Y_MM)  # Flip: bottom-up coords
+        start_y = y3_base - (total_height / 2.0)
         
         for i, line in enumerate(lines3):
             y_pos = start_y + (i * line_spacing_mm)
