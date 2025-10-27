@@ -66,9 +66,10 @@ def key_for_item(item) -> str:
         else:
             print(f"[KEY_FOR_ITEM] Colour '{colour}' not in allowed list, falling through", flush=True)
     
-    # Regular graphic stakes
+    # Regular graphic stakes - using PDF processor for reliability
     if dt == "graphic":
-        return "regular_stake_v1"
+        print(f"[KEY_FOR_ITEM] Graphic decoration detected, routing to PDF processor", flush=True)
+        return "regular_stake_pdf_v1"
     
     # Default to text only
     return "text_only_v1"

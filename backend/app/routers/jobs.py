@@ -10,7 +10,8 @@ from ..utils.qa import qa_item, merge_qa
 from ..processors import uv_regular_v1  # ensure registration
 from ..processors import text_only_v1  # batch stub registration
 from ..processors import photo_basic_v1  # batch stub registration
-from ..processors import regular_stake_v1  # regular stake batch registration
+# from ..processors import regular_stake_v1  # DISABLED - using PDF version
+from ..processors import regular_stake_pdf_v1  # regular stake PDF processor (new)
 # from ..processors import photo_stakes_v1  # DISABLED - using PDF version
 from ..processors import photo_stakes_pdf_v1  # photo stakes PDF processor (new)
 from ..processors.item_router import get as get_processor
