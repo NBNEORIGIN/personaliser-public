@@ -9,6 +9,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
       - key: STORAGE_BACKEND
         value: local
       - key: FRONTEND_ORIGIN
