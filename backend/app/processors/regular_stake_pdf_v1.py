@@ -164,8 +164,7 @@ def _add_regular_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Any,
                         x_mm * mm, y_mm * mm,
                         width=MEMORIAL_W_MM * mm,
                         height=MEMORIAL_H_MM * mm,
-                        preserveAspectRatio=False,  # Stretch to fill
-                        lazy=2  # Memory optimization: load image on-demand
+                        preserveAspectRatio=False  # Stretch to fill
                     )
                     print(f"[REGULAR PDF] Successfully embedded graphic for item {idx}: {graphic_path.name}", flush=True)
                 except Exception as e:

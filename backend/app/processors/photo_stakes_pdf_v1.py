@@ -121,8 +121,7 @@ def _add_photo_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Ingest
                     width=PHOTO_W_MM * mm,
                     height=PHOTO_H_MM * mm,
                     preserveAspectRatio=True,
-                    mask='auto',
-                    lazy=2  # Memory optimization: load image on-demand
+                    mask='auto'
                 )
                 print(f"[PHOTO PDF] Successfully embedded photo for item {idx}", flush=True)
             except Exception as e:
