@@ -1,7 +1,7 @@
 from __future__ import annotations
 from xml.sax.saxutils import escape
 from ..models import OrderItem
-from .registry import register
+from .item_router import register
 
 NAME = "uv_regular"
 VERSION = "1.0.0"

@@ -14,7 +14,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 from ..models import IngestItem
 from ..settings import settings
-from .registry import register_batch
+from .item_router import register_batch
 from .base import write_batch_csv
 
 # Page and memorial dimensions (matching regular stakes)

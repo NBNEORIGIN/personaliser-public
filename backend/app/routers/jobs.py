@@ -13,9 +13,9 @@ from ..processors import photo_basic_v1  # batch stub registration
 from ..processors import regular_stake_v1  # regular stake batch registration
 # from ..processors import photo_stakes_v1  # DISABLED - using PDF version
 from ..processors import photo_stakes_pdf_v1  # photo stakes PDF processor (new)
-from ..processors.registry import get as get_processor
-from ..processors.registry import get_batch as get_batch_processor
-from ..processors.registry import key_for_item
+from ..processors.item_router import get as get_processor
+from ..processors.item_router import get_batch as get_batch_processor
+from ..processors.item_router import key_for_item
 from ..utils.svg_compose import compose_bed_svg, save_svg_and_png, svg_to_png_bytes, BED_W, BED_H
 from ..packer.rect_packer import pack_first_fit, pack_paginated, Rect
 import csv

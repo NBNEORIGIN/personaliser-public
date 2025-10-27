@@ -8,7 +8,7 @@ import base64
 from ..models import IngestItem
 from ..settings import settings
 from ..utils import storage
-from .registry import register_batch
+from .item_router import register_batch
 from .base import write_batch_csv
 
 # Page and memorial dimensions (matching regular stakes)
