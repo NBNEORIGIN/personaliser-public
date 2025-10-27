@@ -127,6 +127,7 @@ def _add_regular_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Any,
     
     # Try to embed graphic
     gkey = getattr(item, "graphics_key", None) or getattr(item, "graphic", None) or ""
+    print(f"[REGULAR PDF] Item {idx} graphics_key: {gkey}, GRAPHICS_DIR: {settings.GRAPHICS_DIR}", flush=True)
     if gkey:
         try:
             key_raw = str(gkey)
@@ -134,6 +135,7 @@ def _add_regular_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Any,
             
             # If key includes extension, try as-is first
             candidates.append(settings.GRAPHICS_DIR / key_raw)
+            print(f"[REGULAR PDF] Searching for graphic: {key_raw}", flush=True)
             
             # Try with .png/.PNG if no extension
             if "." not in key_raw:
@@ -193,7 +195,7 @@ def _add_regular_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Any,
         y2 = y_mm + (MEMORIAL_H_MM - LINE2_Y_MM)  # Flip: bottom-up coords
         c.drawCentredString(cx_mm * mm, y2 * mm, l2)
     
-    # Line 3 (with wrapping)
+    # Line 3 (with wrapping) - each line is separately editable in PDF editors
     if l3:
         lines3, pt = _wrap_line3(l3)
         c.setFont(FONT_NAME, pt)
@@ -202,10 +204,11 @@ def _add_regular_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Any,
         line_spacing_mm = 4.0
         total_height = len(lines3) * line_spacing_mm
         y3_base = y_mm + (MEMORIAL_H_MM - LINE3_Y_MM)  # Flip: bottom-up coords
-        start_y = y3_base - (total_height / 2.0)
+        start_y = y3_base + (total_height / 2.0)  # Start from top of text block
         
+        # Draw each line - they'll be separately editable in PDF editors
         for i, line in enumerate(lines3):
-            y_pos = start_y + (i * line_spacing_mm)
+            y_pos = start_y - (i * line_spacing_mm)
             c.drawCentredString(cx_mm * mm, y_pos * mm, line)
 
 
