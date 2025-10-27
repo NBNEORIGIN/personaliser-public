@@ -267,6 +267,10 @@ def run(items: List[Any], cfg: dict) -> Tuple[str, str, List[str]]:
             "line_2": l2,
             "line_3": l3,
         })
+        
+        # Force garbage collection every 3 items to free memory
+        if (idx + 1) % 3 == 0:
+            gc.collect()
     
     # Add blue reference marker (bottom-right corner)
     ref_size_mm = 0.1
