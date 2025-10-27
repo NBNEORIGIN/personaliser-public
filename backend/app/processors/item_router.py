@@ -41,13 +41,13 @@ def key_for_item(item) -> str:
     """
     print(f"[KEY_FOR_ITEM] Called for item {getattr(item, 'order_ref', 'UNKNOWN')}", flush=True)
     
-    # Check for explicit processor assignment from SKU metadata
-    explicit_processor = (getattr(item, "processor", None) or "").strip()
-    if explicit_processor:
-        print(f"[KEY_FOR_ITEM] Using explicit processor: {explicit_processor}", flush=True)
-        return explicit_processor
+    # DISABLED: Explicit processor assignment - using logic-based routing only
+    # explicit_processor = (getattr(item, "processor", None) or "").strip()
+    # if explicit_processor:
+    #     print(f"[KEY_FOR_ITEM] Using explicit processor: {explicit_processor}", flush=True)
+    #     return explicit_processor
     
-    # Fallback to logic-based routing
+    # Logic-based routing
     dt = (getattr(item, "decoration_type", None) or "").lower()
     product_type = (getattr(item, "product_type", None) or "").lower()
     colour = (getattr(item, "colour", None) or "").lower()
