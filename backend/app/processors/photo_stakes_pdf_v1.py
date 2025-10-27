@@ -48,9 +48,9 @@ LINE1_PT = 17
 LINE2_PT = 25
 LINE3_PT = 13
 
-# Font setup
-FONT_NAME = "Georgia"
-FONT_NAME_BOLD = "Georgia-Bold"
+# Font setup (using Times-Roman, a serif font similar to Georgia)
+FONT_NAME = "Times-Roman"
+FONT_NAME_BOLD = "Times-Bold"
 
 
 def _text_lines_map(it: IngestItem) -> Tuple[str, str, str]:
