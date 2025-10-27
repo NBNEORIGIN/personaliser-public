@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import List, Tuple
 from pathlib import Path
 from datetime import datetime
+import gc
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
@@ -120,7 +121,8 @@ def _add_photo_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Ingest
                     width=PHOTO_W_MM * mm,
                     height=PHOTO_H_MM * mm,
                     preserveAspectRatio=True,
-                    mask='auto'
+                    mask='auto',
+                    lazy=2  # Memory optimization: load image on-demand
                 )
                 print(f"[PHOTO PDF] Successfully embedded photo for item {idx}", flush=True)
             except Exception as e:
@@ -218,6 +220,9 @@ def run(items: List[IngestItem], cfg: dict) -> Tuple[str, str, List[str]]:
     # Write CSV
     csv_path = out_dir / f"{date_str}_photo_stakes_pdf_v1_batch.csv"
     write_batch_csv(rows_csv, csv_path)
+    
+    # Force garbage collection to free memory
+    gc.collect()
     
     # Return URLs
     pdf_url = f"/static/jobs/{job_id}/{pdf_path.name}"
