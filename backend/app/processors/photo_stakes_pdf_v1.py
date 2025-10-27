@@ -48,6 +48,10 @@ LINE1_PT = 17
 LINE2_PT = 25
 LINE3_PT = 13
 
+# Font setup
+FONT_NAME = "Georgia"
+FONT_NAME_BOLD = "Georgia-Bold"
+
 
 def _text_lines_map(it: IngestItem) -> Tuple[str, str, str]:
     """Extract text lines from IngestItem"""
@@ -133,17 +137,17 @@ def _add_photo_memorial(c: canvas.Canvas, x_mm: float, y_mm: float, item: Ingest
     
     # Field 1: Top (17pt)
     if l1:
-        c.setFont("Helvetica", LINE1_PT)
+        c.setFont(FONT_NAME, LINE1_PT)
         c.drawCentredString(text_x_mm * mm, (y_mm + LINE1_Y_MM) * mm, l1)
     
     # Field 2: Center (25pt, bold)
     if l2:
-        c.setFont("Helvetica-Bold", LINE2_PT)
+        c.setFont(FONT_NAME_BOLD, LINE2_PT)
         c.drawCentredString(text_x_mm * mm, (y_mm + LINE2_Y_MM) * mm, l2)
     
     # Field 3: Bottom (13pt)
     if l3:
-        c.setFont("Helvetica", LINE3_PT)
+        c.setFont(FONT_NAME, LINE3_PT)
         c.drawCentredString(text_x_mm * mm, (y_mm + LINE3_Y_MM) * mm, l3)
 
 

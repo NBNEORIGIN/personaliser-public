@@ -86,8 +86,10 @@ export default function OrdersTable(){
       setArtifacts(absArts);
       const png = absArts.find(a=>/bed_\d+\.png$/i.test(a));
       const svg = absArts.find(a=>/bed_\d+\.svg$/i.test(a));
+      const pdf = absArts.find(a=>/bed_\d+\.pdf$/i.test(a));
       setBedPreview(png || undefined);
       if(!png && svg) setBedPreview(svg);
+      if(!png && !svg && pdf) setBedPreview(pdf);
     }catch(e:any){
       alert(e?.message||String(e));
     }finally{ setLoadingGen(false); }
@@ -301,17 +303,18 @@ export default function OrdersTable(){
                   {artifacts.map((url, idx) => {
                     const filename = url.split('/').pop() || '';
                     const isSvg = /\.svg$/i.test(filename);
+                    const isPdf = /\.pdf$/i.test(filename);
                     const isCsv = /\.csv$/i.test(filename);
                     const processorMatch = filename.match(/_([a-z_]+_v\d+)_/);
                     const processor = processorMatch ? processorMatch[1] : 'unknown';
-                    const type = isSvg ? 'SVG' : isCsv ? 'CSV' : 'File';
+                    const type = isSvg ? 'SVG' : isPdf ? 'PDF' : isCsv ? 'CSV' : 'File';
                     
                     return (
                       <tr key={idx} style={{borderBottom:'1px solid #e2e8f0'}}>
                         <td style={{padding:12}}>
                           <span style={{
-                            background: isSvg ? '#e6fffa' : '#fef5e7',
-                            color: isSvg ? '#047857' : '#d97706',
+                            background: isSvg ? '#e6fffa' : isPdf ? '#fce7f3' : '#fef5e7',
+                            color: isSvg ? '#047857' : isPdf ? '#be185d' : '#d97706',
                             padding:'4px 8px',
                             borderRadius:4,
                             fontSize:11,
@@ -321,7 +324,7 @@ export default function OrdersTable(){
                         <td style={{padding:12, fontSize:12, color:'#4a5568', fontFamily:'monospace'}}>{processor}</td>
                         <td style={{padding:12, fontSize:11, color:'#718096', fontFamily:'monospace', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{filename}</td>
                         <td style={{padding:12, textAlign:'center'}}>
-                          {isSvg && (
+                          {(isSvg || isPdf) && (
                             <a href={url} target="_blank" rel="noreferrer" style={{color:'#667eea', textDecoration:'none', fontSize:12}}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display:'inline-block', verticalAlign:'middle'}}>
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
