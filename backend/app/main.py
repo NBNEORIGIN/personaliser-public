@@ -6,7 +6,7 @@ from .routers import catalog, ingest_amazon, jobs, assets
 from .utils import sku_map
 import shutil
 
-# Cache bust: 2025-10-27-12:30 - Force registry reload
+# Cache bust: 2025-10-27-16:50 - Redeploy with upgraded tier (2GB RAM)
 app = FastAPI(title="Bed Optimised Batch Production API")
 
 app.add_middleware(
