@@ -49,13 +49,19 @@ def key_for_item(item) -> str:
     product_type = (getattr(item, "product_type", None) or "").lower()
     colour = (getattr(item, "colour", None) or "").lower()
     
+    # DEBUG: Log the actual values
+    print(f"[KEY_FOR_ITEM DEBUG] dt='{dt}', product_type='{product_type}', colour='{colour}'", flush=True)
+    
     # Photo stakes: specific colours + regular stake + photo decoration
     # Note: Large Stakes and Slate/Black colors will have separate processors in future
     if dt == "photo" and product_type == "regular stake":
         allowed_colours = ["copper", "gold", "silver", "stone", "marble"]
+        print(f"[KEY_FOR_ITEM] Photo + Regular Stake detected, checking colour '{colour}' in {allowed_colours}", flush=True)
         if colour in allowed_colours:
             print(f"[REGISTRY V2] Routing photo stake to PDF processor", flush=True)
             return "photo_stakes_pdf_v1"  # Use PDF processor for better reliability
+        else:
+            print(f"[KEY_FOR_ITEM] Colour '{colour}' not in allowed list, falling through", flush=True)
     
     # Regular graphic stakes
     if dt == "graphic":
