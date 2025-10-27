@@ -17,6 +17,15 @@ from ..settings import settings
 from .item_router import register_batch
 from .base import write_batch_csv
 
+# Register Georgia font
+FONTS_DIR = Path(__file__).resolve().parents[3] / "fonts"
+georgia_path = FONTS_DIR / "georgia.ttf"
+if georgia_path.exists():
+    pdfmetrics.registerFont(TTFont('Georgia', str(georgia_path)))
+    print(f"[PHOTO PDF] Registered Georgia font from {georgia_path}", flush=True)
+else:
+    print(f"[PHOTO PDF] WARNING: Georgia font not found at {georgia_path}", flush=True)
+
 # Page and memorial dimensions (matching regular stakes)
 PAGE_W_MM = 439.8
 PAGE_H_MM = 289.9
@@ -48,9 +57,9 @@ LINE1_PT = 17
 LINE2_PT = 25
 LINE3_PT = 13
 
-# Font setup (using Times-Roman, a serif font similar to Georgia)
-FONT_NAME = "Times-Roman"
-FONT_NAME_BOLD = "Times-Bold"
+# Font setup
+FONT_NAME = "Georgia"
+FONT_NAME_BOLD = "Georgia"  # Using same font for bold (can add Georgia Bold TTF later)
 
 
 def _text_lines_map(it: IngestItem) -> Tuple[str, str, str]:
