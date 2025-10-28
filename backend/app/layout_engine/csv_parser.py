@@ -32,6 +32,10 @@ def parse_csv_to_content(
         mapping = {"Name": "line1", "Date": "line2", "Message": "line3"}
         content = parse_csv_to_content(csv_data, mapping)
     """
+    # Strip BOM (Byte Order Mark) if present
+    if csv_data.startswith('\ufeff'):
+        csv_data = csv_data[1:]
+    
     slots = []
     reader = csv.DictReader(io.StringIO(csv_data)) if has_header else csv.reader(io.StringIO(csv_data))
     
