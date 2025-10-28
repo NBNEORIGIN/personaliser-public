@@ -194,15 +194,24 @@
         <div class="content">
             <div class="sidebar">
                 <div class="info-box">
-                    <strong>💡 Quick Demo:</strong><br>
-                    This system generates print plates from templates. No code changes needed for new products!
+                    <strong>🎨 Template Layout Engine</strong><br>
+                    <em>Transform bulk orders into production-ready print plates in seconds</em>
                     <br><br>
-                    <strong>✨ Features:</strong>
-                    <ul style="margin: 10px 0 0 20px; padding: 0;">
-                        <li>Template-driven layouts</li>
-                        <li>Live SVG preview</li>
-                        <li>Editable text in output</li>
-                        <li>PDF export ready</li>
+                    <strong>📋 Quick Start Guide:</strong>
+                    <ol style="margin: 10px 0 0 20px; padding: 0; font-size: 13px;">
+                        <li><strong>Select Product Type</strong> - Text or Photo products</li>
+                        <li><strong>Choose Template</strong> - Or customize bed/part sizes</li>
+                        <li><strong>Upload CSV</strong> - Your order data (Name, Date, Message, etc.)</li>
+                        <li><strong>Map Columns</strong> - System auto-detects, adjust if needed</li>
+                        <li><strong>Generate!</strong> - Get SVG preview or PDF download</li>
+                    </ol>
+                    <br>
+                    <strong>✨ Key Benefits:</strong>
+                    <ul style="margin: 5px 0 0 20px; padding: 0; font-size: 13px;">
+                        <li>No coding required for new products</li>
+                        <li>Process 100s of orders instantly</li>
+                        <li>Editable SVG output for last-minute changes</li>
+                        <li>Production-ready PDF export</li>
                     </ul>
                 </div>
                 
@@ -244,6 +253,11 @@
                 
                 <div class="section">
                     <h3>CSV Upload</h3>
+                    <div style="margin-bottom: 10px; padding: 8px; background: #e8f4f8; border-radius: 4px; font-size: 12px;">
+                        <strong>💡 Need a sample?</strong><br>
+                        <button class="btn btn-secondary" onclick="downloadSampleCSV('text')" style="margin-top: 5px; font-size: 11px;">📥 Text Sample</button>
+                        <button class="btn btn-secondary" onclick="downloadSampleCSV('photo')" style="margin-top: 5px; font-size: 11px;">📥 Photo Sample</button>
+                    </div>
                     <input type="file" id="csvFile" accept=".csv,.txt" style="margin-bottom: 10px;" onchange="previewCSV()">
                     <div id="csvMapping" style="display:none; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 4px;">
                         <strong>Column Mapping:</strong>
@@ -256,7 +270,7 @@
                 </div>
                 
                 <div class="section">
-                    <h3>Bed Configuration</h3>
+                    <h3>Bed Configuration <span style="font-size: 12px; font-weight: normal; color: #666;">ℹ️ Print bed size</span></h3>
                     <div class="grid-inputs">
                         <div class="input-group">
                             <label>Width (mm)</label>
@@ -270,7 +284,7 @@
                 </div>
                 
                 <div class="section">
-                    <h3>Part Configuration</h3>
+                    <h3>Part Configuration <span style="font-size: 12px; font-weight: normal; color: #666;">ℹ️ Individual item size</span></h3>
                     <div class="grid-inputs">
                         <div class="input-group">
                             <label>Width (mm)</label>
@@ -613,6 +627,40 @@
         // Load graphics on page load
         window.addEventListener('DOMContentLoaded', loadGraphics);
         
+        function downloadSampleCSV(type) {
+            let csvContent = '';
+            
+            if (type === 'text') {
+                csvContent = `Name,Date,Message
+John Smith,1950-2024,Forever in our hearts
+Mary Johnson,1945-2023,Loved and remembered
+Robert Williams,1960-2024,Rest in peace
+Sarah Davis,1955-2022,Always in our thoughts
+Michael Brown,1948-2024,Gone but never forgotten
+Jennifer Wilson,1962-2023,In loving memory
+David Taylor,1952-2024,Cherished memories
+Lisa Anderson,1958-2023,Forever loved
+James Martinez,1949-2024,Dearly missed`;
+            } else {
+                csvContent = `Name,Date,Photo
+John Smith,1950-2024,/static/photos/john.jpg
+Mary Johnson,1945-2023,/static/photos/mary.jpg
+Robert Williams,1960-2024,/static/photos/robert.jpg
+Sarah Davis,1955-2022,/static/photos/sarah.jpg
+Michael Brown,1948-2024,/static/photos/michael.jpg`;
+            }
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sample_${type}_orders.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
         function loadTemplate(type) {
             const templates = {
                 memorial: {
@@ -844,6 +892,50 @@
                 
             } catch (error) {
                 status.innerHTML = `<span style="color: red;">❌ Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function generateSVG() {
+            const status = document.getElementById('status');
+            
+            // Validate inputs
+            const bedWidth = parseFloat(document.getElementById('bedWidth').value);
+            const bedHeight = parseFloat(document.getElementById('bedHeight').value);
+            const partWidth = parseFloat(document.getElementById('partWidth').value);
+            const partHeight = parseFloat(document.getElementById('partHeight').value);
+            
+            if (!bedWidth || !bedHeight || !partWidth || !partHeight) {
+                status.innerHTML = '<div class="error">❌ Please fill in all bed and part dimensions</div>';
+                return;
+            }
+            
+            if (partWidth > bedWidth || partHeight > bedHeight) {
+                status.innerHTML = '<div class="error">❌ Part size cannot be larger than bed size</div>';
+                return;
+            }
+            
+            status.innerHTML = '<div class="loading">⏳ Generating...</div>';
+            
+            try {
+                const template = buildTemplate();
+                
+                const response = await fetch(`${API_BASE}/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ template, format: 'svg' })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${errorText}`);
+                }
+                
+                const svgContent = await response.text();
+                document.getElementById('preview').innerHTML = svgContent;
+                status.innerHTML = '<div class="success">✅ Generated successfully! You can now download as PDF or edit the SVG.</div>';
+                
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Error: ${error.message}<br><small>Please check your inputs and try again.</small></div>`;
             }
         }
     </script>
