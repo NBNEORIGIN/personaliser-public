@@ -207,12 +207,19 @@ async def upload_csv(
             start_idx = page * items_per_page
             end_idx = start_idx + items_per_page
             content.slots = content.slots[start_idx:end_idx]
+            
+            # Re-index slots to start from 0 for each page
+            for i, slot in enumerate(content.slots):
+                slot.slot_index = i
         
         # Debug logging
+        print(f"[CSV DEBUG] Page: {page}, Items per page: {items_per_page}")
         print(f"[CSV DEBUG] Column mapping: {mapping}")
         print(f"[CSV DEBUG] Number of slots: {len(content.slots)}")
         if content.slots:
             print(f"[CSV DEBUG] First slot data: {content.slots[0].model_dump()}")
+            if len(content.slots) > 1:
+                print(f"[CSV DEBUG] Last slot data: {content.slots[-1].model_dump()}")
         
         # Generate SVG
         svg_output = renderPlateSVG(template_obj, content)
