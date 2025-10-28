@@ -247,23 +247,8 @@
                     <input type="file" id="csvFile" accept=".csv,.txt" style="margin-bottom: 10px;" onchange="previewCSV()">
                     <div id="csvMapping" style="display:none; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 4px;">
                         <strong>Column Mapping:</strong>
-                        <div style="margin-top: 8px;">
-                            <label style="display: block; margin: 4px 0;">
-                                <span style="display: inline-block; width: 100px;">Name Line:</span>
-                                <select id="mapNameLine" style="width: 150px;"></select>
-                            </label>
-                            <label style="display: block; margin: 4px 0;">
-                                <span style="display: inline-block; width: 100px;">Message:</span>
-                                <select id="mapMessageBlock" style="width: 150px;"></select>
-                            </label>
-                            <label id="photoMappingRow" style="display: block; margin: 4px 0;">
-                                <span style="display: inline-block; width: 100px;">Photo Path:</span>
-                                <select id="mapPhotoArea" style="width: 150px;"></select>
-                            </label>
-                            <label id="graphicMappingRow" style="display: none; margin: 4px 0;">
-                                <span style="display: inline-block; width: 100px;">Graphic:</span>
-                                <select id="mapBorderFrame" style="width: 150px;"></select>
-                            </label>
+                        <div id="mappingFields" style="margin-top: 8px;">
+                            <!-- Dynamically populated based on template elements -->
                         </div>
                     </div>
                     <button class="btn" onclick="uploadCSV()">📤 Upload & Generate</button>
@@ -744,33 +729,52 @@
                 if (lines.length > 0) {
                     const headers = lines[0].split(',').map(h => h.trim());
                     
-                    // Populate mapping dropdowns
-                    const selects = ['mapNameLine', 'mapMessageBlock', 'mapPhotoArea', 'mapBorderFrame'];
-                    selects.forEach(selectId => {
-                        const select = document.getElementById(selectId);
-                        if (!select) return;
+                    // Get template elements
+                    const template = buildTemplate();
+                    const elements = template.part.elements.filter(el => el.type === 'text' || el.type === 'image' || el.type === 'graphic');
+                    
+                    // Build mapping UI dynamically
+                    const mappingDiv = document.getElementById('mappingFields');
+                    mappingDiv.innerHTML = '';
+                    
+                    elements.forEach((element, idx) => {
+                        const label = document.createElement('label');
+                        label.style.display = 'block';
+                        label.style.margin = '4px 0';
                         
+                        const span = document.createElement('span');
+                        span.style.display = 'inline-block';
+                        span.style.width = '120px';
+                        span.textContent = `${element.id}:`;
+                        
+                        const select = document.createElement('select');
+                        select.id = `map_${element.id}`;
+                        select.style.width = '150px';
                         select.innerHTML = '<option value="">-- Skip --</option>';
-                        headers.forEach((header, idx) => {
+                        
+                        headers.forEach(header => {
                             const option = document.createElement('option');
                             option.value = header;
                             option.textContent = header;
                             select.appendChild(option);
                         });
                         
-                        // Auto-select if name matches
-                        if (selectId === 'mapNameLine' && headers.some(h => h.toLowerCase().includes('name'))) {
-                            select.value = headers.find(h => h.toLowerCase().includes('name'));
+                        // Auto-select: try name matching, then position
+                        const elementIdLower = element.id.toLowerCase();
+                        const matchedHeader = headers.find(h => {
+                            const hLower = h.toLowerCase();
+                            return hLower.includes(elementIdLower) || elementIdLower.includes(hLower);
+                        });
+                        
+                        if (matchedHeader) {
+                            select.value = matchedHeader;
+                        } else if (idx < headers.length) {
+                            select.value = headers[idx];
                         }
-                        if (selectId === 'mapMessageBlock' && headers.some(h => h.toLowerCase().includes('message') || h.toLowerCase().includes('text') || h.toLowerCase().includes('date'))) {
-                            select.value = headers.find(h => h.toLowerCase().includes('message') || h.toLowerCase().includes('text') || h.toLowerCase().includes('date'));
-                        }
-                        if (selectId === 'mapPhotoArea' && headers.some(h => h.toLowerCase().includes('photo') || h.toLowerCase().includes('image'))) {
-                            select.value = headers.find(h => h.toLowerCase().includes('photo') || h.toLowerCase().includes('image'));
-                        }
-                        if (selectId === 'mapBorderFrame' && headers.some(h => h.toLowerCase().includes('graphic') || h.toLowerCase().includes('border') || h.toLowerCase().includes('frame'))) {
-                            select.value = headers.find(h => h.toLowerCase().includes('graphic') || h.toLowerCase().includes('border') || h.toLowerCase().includes('frame'));
-                        }
+                        
+                        label.appendChild(span);
+                        label.appendChild(select);
+                        mappingDiv.appendChild(label);
                     });
                     
                     document.getElementById('csvMapping').style.display = 'block';
@@ -792,17 +796,17 @@
             status.innerHTML = '⏳ Uploading and generating...';
             
             try {
-                // Build column mapping from UI
+                // Build column mapping from UI dynamically
                 const mapping = {};
-                const nameLineCol = document.getElementById('mapNameLine').value;
-                const messageBlockCol = document.getElementById('mapMessageBlock').value;
-                const photoAreaCol = document.getElementById('mapPhotoArea')?.value;
-                const borderFrameCol = document.getElementById('mapBorderFrame')?.value;
+                const template = buildTemplate();
+                const elements = template.part.elements.filter(el => el.type === 'text' || el.type === 'image' || el.type === 'graphic');
                 
-                if (nameLineCol) mapping[nameLineCol] = 'nameLine';
-                if (messageBlockCol) mapping[messageBlockCol] = 'messageBlock';
-                if (photoAreaCol) mapping[photoAreaCol] = 'photoArea';
-                if (borderFrameCol) mapping[borderFrameCol] = 'borderFrame';
+                elements.forEach(element => {
+                    const select = document.getElementById(`map_${element.id}`);
+                    if (select && select.value) {
+                        mapping[select.value] = element.id;
+                    }
+                });
                 
                 const formData = new FormData();
                 formData.append('file', file);
