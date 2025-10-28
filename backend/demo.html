@@ -235,6 +235,14 @@
                 </div>
                 
                 <div class="section">
+                    <h3>Graphics Library</h3>
+                    <input type="file" id="graphicFile" accept=".svg,.png,.jpg" style="margin-bottom: 10px;">
+                    <button class="btn btn-secondary" onclick="uploadGraphic()">📤 Upload Graphic</button>
+                    <div id="graphicsList" style="margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 12px;"></div>
+                    <button class="btn btn-secondary" onclick="loadGraphics()" style="margin-top: 5px;">🔄 Refresh List</button>
+                </div>
+                
+                <div class="section">
                     <h3>CSV Upload</h3>
                     <input type="file" id="csvFile" accept=".csv,.txt" style="margin-bottom: 10px;" onchange="previewCSV()">
                     <div id="csvMapping" style="display:none; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 4px;">
@@ -532,6 +540,80 @@
                 document.getElementById('graphicMappingRow').style.display = 'none';
             }
         }
+        
+        async function uploadGraphic() {
+            const fileInput = document.getElementById('graphicFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a graphic file');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch(`${API_BASE}/upload/graphic`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                alert(`✅ Uploaded: ${data.filename}\nPath: ${data.path}`);
+                
+                // Refresh graphics list
+                loadGraphics();
+                
+                // Clear file input
+                fileInput.value = '';
+                
+            } catch (error) {
+                alert(`❌ Error uploading graphic: ${error.message}`);
+            }
+        }
+        
+        async function loadGraphics() {
+            try {
+                const response = await fetch(`${API_BASE}/graphics`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const listDiv = document.getElementById('graphicsList');
+                
+                if (data.graphics.length === 0) {
+                    listDiv.innerHTML = '<em style="color: #666;">No graphics uploaded yet</em>';
+                    return;
+                }
+                
+                listDiv.innerHTML = data.graphics.map(g => 
+                    `<div style="padding: 4px; border-bottom: 1px solid #ddd;">
+                        <strong>${g.filename}</strong><br>
+                        <code style="font-size: 10px; color: #666;">${g.path}</code>
+                        <button onclick="copyToClipboard('${g.path}')" style="margin-left: 5px; font-size: 10px;">📋 Copy</button>
+                    </div>`
+                ).join('');
+                
+            } catch (error) {
+                document.getElementById('graphicsList').innerHTML = 
+                    `<span style="color: red;">Error loading graphics: ${error.message}</span>`;
+            }
+        }
+        
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert(`✅ Copied to clipboard: ${text}`);
+            });
+        }
+        
+        // Load graphics on page load
+        window.addEventListener('DOMContentLoaded', loadGraphics);
         
         function loadTemplate(type) {
             const templates = {

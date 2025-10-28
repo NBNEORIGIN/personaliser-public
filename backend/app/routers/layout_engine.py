@@ -224,6 +224,76 @@ async def upload_csv(
         )
 
 
+@router.post("/upload/graphic")
+async def upload_graphic(file: UploadFile = File(...)):
+    """
+    Upload a graphic/SVG file for use in templates.
+    
+    **Parameters:**
+    - `file`: SVG or image file
+    
+    **Returns:**
+    - File path to use in templates
+    """
+    try:
+        from pathlib import Path
+        
+        # Create graphics directory if it doesn't exist
+        graphics_dir = Path("static/graphics")
+        graphics_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save file
+        file_path = graphics_dir / file.filename
+        content = await file.read()
+        file_path.write_bytes(content)
+        
+        return {
+            "success": True,
+            "filename": file.filename,
+            "path": f"/static/graphics/{file.filename}",
+            "message": "Graphic uploaded successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to upload graphic: {str(e)}"
+        )
+
+
+@router.get("/graphics")
+async def list_graphics():
+    """
+    List all uploaded graphics.
+    
+    **Returns:**
+    - List of available graphics with paths
+    """
+    try:
+        from pathlib import Path
+        
+        graphics_dir = Path("static/graphics")
+        if not graphics_dir.exists():
+            return {"graphics": []}
+        
+        graphics = []
+        for file_path in graphics_dir.iterdir():
+            if file_path.is_file():
+                graphics.append({
+                    "filename": file_path.name,
+                    "path": f"/static/graphics/{file_path.name}",
+                    "size": file_path.stat().st_size
+                })
+        
+        return {"graphics": graphics}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list graphics: {str(e)}"
+        )
+
+
 @router.get("/health")
 async def health_check():
     """Health check endpoint."""
