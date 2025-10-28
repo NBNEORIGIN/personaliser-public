@@ -919,10 +919,24 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             try {
                 const template = buildTemplate();
                 
+                // Create sample content for preview
+                const totalSlots = template.tiling.cols * template.tiling.rows;
+                const slots = [];
+                for (let i = 0; i < totalSlots; i++) {
+                    slots.push({
+                        slot_index: i,
+                        nameLine: document.getElementById('name0')?.value || `Item ${i + 1}`,
+                        messageBlock: document.getElementById('message0')?.value || `Sample text ${i + 1}`,
+                        additionalText: `Line 3 - ${i + 1}`
+                    });
+                }
+                
+                const content = { slots };
+                
                 const response = await fetch(`${API_BASE}/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ template, format: 'svg' })
+                    body: JSON.stringify({ template, content, format: 'svg' })
                 });
                 
                 if (!response.ok) {
