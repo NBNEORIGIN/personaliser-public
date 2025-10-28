@@ -284,7 +284,8 @@
     </div>
     
     <script>
-        const API_BASE = 'http://localhost:8000/api/layout';
+        // Auto-detect API base URL (works locally and on Render)
+        const API_BASE = window.location.origin + '/api/layout';
         
         function buildTemplate() {
             return {
