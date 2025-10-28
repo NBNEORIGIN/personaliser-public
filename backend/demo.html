@@ -377,11 +377,11 @@
                             type: "text",
                             id: "nameLine",
                             x_mm: 10,
-                            y_mm: 10,
+                            y_mm: 15,
                             w_mm: 120,
-                            h_mm: 10,
+                            h_mm: 12,
                             font_family: "Times New Roman",
-                            font_size_pt: 14,
+                            font_size_pt: 16,
                             text_align: "center",
                             multiline: false,
                             editable: true
@@ -390,11 +390,11 @@
                             type: "text",
                             id: "messageBlock",
                             x_mm: 10,
-                            y_mm: 25,
+                            y_mm: 32,
                             w_mm: 120,
-                            h_mm: 20,
+                            h_mm: 18,
                             font_family: "Times New Roman",
-                            font_size_pt: 10,
+                            font_size_pt: 11,
                             text_align: "center",
                             multiline: true,
                             editable: true
@@ -403,24 +403,13 @@
                             type: "text",
                             id: "additionalText",
                             x_mm: 10,
-                            y_mm: 50,
+                            y_mm: 55,
                             w_mm: 120,
-                            h_mm: 15,
+                            h_mm: 12,
                             font_family: "Times New Roman",
-                            font_size_pt: 9,
+                            font_size_pt: 10,
                             text_align: "center",
                             multiline: true,
-                            editable: true
-                        },
-                        {
-                            type: "image",
-                            id: "photoArea",
-                            x_mm: 10,
-                            y_mm: 70,
-                            w_mm: 40,
-                            h_mm: 40,
-                            fit: "cover",
-                            clip_shape: { kind: "rounded_rect", radius_mm: 4 },
                             editable: true
                         },
                         {
@@ -430,7 +419,7 @@
                             y_mm: 0,
                             w_mm: parseFloat(document.getElementById('partWidth').value),
                             h_mm: parseFloat(document.getElementById('partHeight').value),
-                            source: "border.svg",
+                            source: "",
                             editable: false
                         }
                     ]
