@@ -214,6 +214,20 @@
                 </div>
                 
                 <div class="section">
+                    <h3>Template Management</h3>
+                    <button class="btn btn-secondary" onclick="saveTemplate()">💾 Save Template</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('loadTemplateFile').click()">📂 Load Template</button>
+                    <input type="file" id="loadTemplateFile" accept=".json" style="display:none" onchange="loadTemplateFile(event)">
+                </div>
+                
+                <div class="section">
+                    <h3>CSV Upload</h3>
+                    <input type="file" id="csvFile" accept=".csv,.txt" style="margin-bottom: 10px;">
+                    <button class="btn" onclick="uploadCSV()">📤 Upload & Generate</button>
+                    <div id="csvStatus" style="margin-top: 10px; font-size: 12px;"></div>
+                </div>
+                
+                <div class="section">
                     <h3>Bed Configuration</h3>
                     <div class="grid-inputs">
                         <div class="input-group">
@@ -518,6 +532,90 @@
             
             // Auto-generate
             generateSVG();
+        }
+        
+        function saveTemplate() {
+            const template = buildTemplate();
+            const json = JSON.stringify(template, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'template.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="success">✅ Template saved!</div>';
+        }
+        
+        function loadTemplateFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const template = JSON.parse(e.target.result);
+                    
+                    // Apply template to UI
+                    document.getElementById('bedWidth').value = template.bed.width_mm;
+                    document.getElementById('bedHeight').value = template.bed.height_mm;
+                    document.getElementById('partWidth').value = template.part.width_mm;
+                    document.getElementById('partHeight').value = template.part.height_mm;
+                    document.getElementById('cols').value = template.tiling.cols;
+                    document.getElementById('rows').value = template.tiling.rows;
+                    document.getElementById('gapX').value = template.tiling.gap_x_mm;
+                    document.getElementById('gapY').value = template.tiling.gap_y_mm;
+                    
+                    const status = document.getElementById('status');
+                    status.innerHTML = '<div class="success">✅ Template loaded!</div>';
+                } catch (error) {
+                    const status = document.getElementById('status');
+                    status.innerHTML = `<div class="error">❌ Error loading template: ${error.message}</div>`;
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        async function uploadCSV() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                document.getElementById('csvStatus').innerHTML = '<span style="color: red;">Please select a CSV file</span>';
+                return;
+            }
+            
+            const status = document.getElementById('csvStatus');
+            status.innerHTML = '⏳ Uploading and generating...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('template', JSON.stringify(buildTemplate()));
+                formData.append('has_header', 'true');
+                formData.append('format', 'svg');
+                
+                const response = await fetch(`${API_BASE}/upload/csv`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const svgContent = await response.text();
+                document.getElementById('preview').innerHTML = svgContent;
+                status.innerHTML = '<span style="color: green;">✅ CSV processed successfully!</span>';
+                document.getElementById('status').innerHTML = '<div class="success">✅ Generated from CSV!</div>';
+                
+            } catch (error) {
+                status.innerHTML = `<span style="color: red;">❌ Error: ${error.message}</span>`;
+            }
         }
     </script>
 </body>
