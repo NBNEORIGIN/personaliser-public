@@ -551,7 +551,7 @@
         }
         
         function switchBed(bedId) {
-            // Save current bed config
+            // Save current bed config and content
             if (currentBedId !== null) {
                 const currentBed = beds.find(b => b.id === currentBedId);
                 if (currentBed) {
@@ -561,7 +561,14 @@
                         partWidth: document.getElementById('partWidth').value,
                         partHeight: document.getElementById('partHeight').value,
                         cols: document.getElementById('cols').value,
-                        rows: document.getElementById('rows').value
+                        rows: document.getElementById('rows').value,
+                        gapX: document.getElementById('gapX').value,
+                        gapY: document.getElementById('gapY').value,
+                        name0: document.getElementById('name0')?.value || '',
+                        message0: document.getElementById('message0')?.value || '',
+                        name1: document.getElementById('name1')?.value || '',
+                        message1: document.getElementById('message1')?.value || '',
+                        preview: document.getElementById('previewContainer').innerHTML
                     };
                 }
             }
@@ -569,7 +576,7 @@
             currentBedId = bedId;
             const bed = beds.find(b => b.id === bedId);
             
-            // Load bed config
+            // Load bed config or set defaults
             if (bed.config) {
                 document.getElementById('bedWidth').value = bed.config.bedWidth;
                 document.getElementById('bedHeight').value = bed.config.bedHeight;
@@ -577,10 +584,31 @@
                 document.getElementById('partHeight').value = bed.config.partHeight;
                 document.getElementById('cols').value = bed.config.cols;
                 document.getElementById('rows').value = bed.config.rows;
+                document.getElementById('gapX').value = bed.config.gapX;
+                document.getElementById('gapY').value = bed.config.gapY;
+                if (document.getElementById('name0')) document.getElementById('name0').value = bed.config.name0;
+                if (document.getElementById('message0')) document.getElementById('message0').value = bed.config.message0;
+                if (document.getElementById('name1')) document.getElementById('name1').value = bed.config.name1;
+                if (document.getElementById('message1')) document.getElementById('message1').value = bed.config.message1;
+                document.getElementById('previewContainer').innerHTML = bed.config.preview;
+            } else {
+                // Set defaults for new bed
+                document.getElementById('bedWidth').value = 480;
+                document.getElementById('bedHeight').value = 330;
+                document.getElementById('partWidth').value = 140;
+                document.getElementById('partHeight').value = 90;
+                document.getElementById('cols').value = 3;
+                document.getElementById('rows').value = 3;
+                document.getElementById('gapX').value = 5;
+                document.getElementById('gapY').value = 5;
+                if (document.getElementById('name0')) document.getElementById('name0').value = 'In loving memory';
+                if (document.getElementById('message0')) document.getElementById('message0').value = 'John Kendall Newman\n1952 – 2024';
+                if (document.getElementById('name1')) document.getElementById('name1').value = 'Forever in our hearts';
+                if (document.getElementById('message1')) document.getElementById('message1').value = 'Mary Elizabeth Smith\n1945 – 2024';
+                clearPreview();
             }
             
             renderTabs();
-            clearPreview();
         }
         
         function renderTabs() {
