@@ -944,7 +944,8 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                     throw new Error(`Server error: ${errorText}`);
                 }
                 
-                const svgContent = await response.text();
+                const data = await response.json();
+                const svgContent = data.svg || data;
                 document.getElementById('preview').innerHTML = svgContent;
                 status.innerHTML = '<div class="success">✅ Generated successfully! You can now download as PDF or edit the SVG.</div>';
                 
