@@ -57,6 +57,13 @@ try:
 except Exception:
     pass
 
+# Root redirect
+@app.get("/")
+async def root():
+    """Redirect root to demo page"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/demo")
+
 # Health and status endpoints
 @app.get("/health")
 async def health_check():
