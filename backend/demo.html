@@ -192,6 +192,21 @@
                 <div class="info-box">
                     <strong>💡 Quick Demo:</strong><br>
                     This system generates print plates from templates. No code changes needed for new products!
+                    <br><br>
+                    <strong>✨ Features:</strong>
+                    <ul style="margin: 10px 0 0 20px; padding: 0;">
+                        <li>Template-driven layouts</li>
+                        <li>Live SVG preview</li>
+                        <li>Editable text in output</li>
+                        <li>PDF export ready</li>
+                    </ul>
+                </div>
+                
+                <div class="section">
+                    <h3>Quick Templates</h3>
+                    <button class="btn btn-secondary" onclick="loadTemplate('memorial')">Memorial Plaques</button>
+                    <button class="btn btn-secondary" onclick="loadTemplate('business')">Business Cards</button>
+                    <button class="btn btn-secondary" onclick="loadTemplate('labels')">Product Labels</button>
                 </div>
                 
                 <div class="section">
@@ -447,6 +462,58 @@
             } catch (error) {
                 status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
             }
+        }
+        
+        function loadTemplate(type) {
+            const templates = {
+                memorial: {
+                    bedWidth: 480, bedHeight: 330,
+                    partWidth: 140, partHeight: 90,
+                    cols: 3, rows: 3, gapX: 5, gapY: 5,
+                    name0: "In loving memory",
+                    message0: "John Kendall Newman\n1952 – 2024",
+                    name1: "Forever in our hearts",
+                    message1: "Mary Elizabeth Smith\n1945 – 2024"
+                },
+                business: {
+                    bedWidth: 600, bedHeight: 400,
+                    partWidth: 85, partHeight: 55,
+                    cols: 6, rows: 6, gapX: 3, gapY: 3,
+                    name0: "John Smith",
+                    message0: "CEO\njohn@company.com",
+                    name1: "Jane Doe",
+                    message1: "Designer\njane@company.com"
+                },
+                labels: {
+                    bedWidth: 480, bedHeight: 330,
+                    partWidth: 100, partHeight: 60,
+                    cols: 4, rows: 5, gapX: 5, gapY: 3,
+                    name0: "Product A",
+                    message0: "SKU: PA-001\n$29.99",
+                    name1: "Product B",
+                    message1: "SKU: PB-002\n$39.99"
+                }
+            };
+            
+            const template = templates[type];
+            if (!template) return;
+            
+            // Apply template values
+            document.getElementById('bedWidth').value = template.bedWidth;
+            document.getElementById('bedHeight').value = template.bedHeight;
+            document.getElementById('partWidth').value = template.partWidth;
+            document.getElementById('partHeight').value = template.partHeight;
+            document.getElementById('cols').value = template.cols;
+            document.getElementById('rows').value = template.rows;
+            document.getElementById('gapX').value = template.gapX;
+            document.getElementById('gapY').value = template.gapY;
+            document.getElementById('name0').value = template.name0;
+            document.getElementById('message0').value = template.message0;
+            document.getElementById('name1').value = template.name1;
+            document.getElementById('message1').value = template.message1;
+            
+            // Auto-generate
+            generateSVG();
         }
     </script>
 </body>
