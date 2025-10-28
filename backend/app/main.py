@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .settings import settings
@@ -85,6 +85,44 @@ async def status():
 async def demo():
     """Serve demo HTML page"""
     from fastapi.responses import FileResponse
-    import os
-    demo_path = os.path.join(os.path.dirname(__file__), "..", "demo.html")
-    return FileResponse(demo_path)
+    from pathlib import Path
+    
+    # Use absolute path resolution
+    demo_path = Path(__file__).parent.parent / "demo.html"
+    
+    if not demo_path.exists():
+        raise HTTPException(status_code=404, detail=f"Demo file not found at {demo_path}")
+    
+    return FileResponse(
+        str(demo_path),
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+@app.get("/demo/debug")
+async def demo_debug():
+    """Debug endpoint to check demo.html content"""
+    from pathlib import Path
+    demo_path = Path(__file__).parent.parent / "demo.html"
+    
+    if demo_path.exists():
+        content = demo_path.read_text(encoding='utf-8')
+        has_quick_templates = "Quick Templates" in content
+        has_loadtemplate = "loadTemplate" in content
+        title_match = content[content.find("<title>"):content.find("</title>")+8] if "<title>" in content else "Not found"
+        
+        return {
+            "path": str(demo_path),
+            "exists": True,
+            "size": len(content),
+            "has_quick_templates": has_quick_templates,
+            "has_loadTemplate_function": has_loadtemplate,
+            "title": title_match,
+            "first_500_chars": content[:500]
+        }
+    else:
+        return {"path": str(demo_path), "exists": False}
