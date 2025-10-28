@@ -198,6 +198,12 @@ async def upload_csv(
         # Parse CSV to content
         content = parse_csv_to_content(csv_data, mapping, has_header)
         
+        # Debug logging
+        print(f"[CSV DEBUG] Column mapping: {mapping}")
+        print(f"[CSV DEBUG] Number of slots: {len(content.slots)}")
+        if content.slots:
+            print(f"[CSV DEBUG] First slot data: {content.slots[0].model_dump()}")
+        
         # Generate SVG
         svg_output = renderPlateSVG(template_obj, content)
         
