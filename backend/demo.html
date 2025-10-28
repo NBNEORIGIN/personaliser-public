@@ -144,6 +144,7 @@
         .preview svg {
             max-width: 100%;
             height: auto;
+            border: 1px solid #ddd;
         }
         
         .loading {
@@ -182,6 +183,54 @@
             font-size: 13px;
             line-height: 1.6;
         }
+        
+        .menu-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            color: black;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            min-width: 200px;
+            z-index: 1000;
+            margin-top: 5px;
+        }
+        
+        .menu-dropdown div {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .menu-dropdown div:last-child {
+            border-bottom: none;
+        }
+        
+        .menu-dropdown div:hover {
+            background: #f0f0f0;
+        }
+        
+        .bed-tab {
+            padding: 8px 15px;
+            background: white;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            border: 2px solid transparent;
+        }
+        
+        .bed-tab.active {
+            background: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+        
+        .bed-tab:hover:not(.active) {
+            background: #e8e8e8;
+        }
     </style>
 </head>
 <body>
@@ -189,6 +238,53 @@
         <div class="header">
             <h1>🎨 Template Layout Engine</h1>
             <p>Interactive Demo - Generate Custom Print Plates</p>
+        </div>
+        
+        <!-- Menu Bar -->
+        <div style="background: #2c3e50; color: white; padding: 8px 15px; display: flex; gap: 20px; font-size: 14px;">
+            <div class="menu-item" style="position: relative;">
+                <span onclick="toggleMenu('fileMenu')" style="cursor: pointer; padding: 5px 10px;">📁 File</span>
+                <div id="fileMenu" class="menu-dropdown" style="display: none;">
+                    <div onclick="newBed()">🆕 New Bed</div>
+                    <div onclick="document.getElementById('loadTemplateFile').click()">📂 Open Template</div>
+                    <div onclick="saveTemplate()">💾 Save Template</div>
+                    <div onclick="downloadSVG()">📥 Export SVG</div>
+                    <div onclick="downloadPDF()">📥 Export PDF</div>
+                </div>
+            </div>
+            <div class="menu-item" style="position: relative;">
+                <span onclick="toggleMenu('editMenu')" style="cursor: pointer; padding: 5px 10px;">✏️ Edit</span>
+                <div id="editMenu" class="menu-dropdown" style="display: none;">
+                    <div onclick="clearPreview()">🗑️ Clear Preview</div>
+                    <div onclick="resetDefaults()">↺ Reset to Defaults</div>
+                    <div onclick="renameBed()">✏️ Rename Current Bed</div>
+                </div>
+            </div>
+            <div class="menu-item" style="position: relative;">
+                <span onclick="toggleMenu('viewMenu')" style="cursor: pointer; padding: 5px 10px;">👁️ View</span>
+                <div id="viewMenu" class="menu-dropdown" style="display: none;">
+                    <div onclick="zoomPreview(1.2)">🔍 Zoom In</div>
+                    <div onclick="zoomPreview(0.8)">🔍 Zoom Out</div>
+                    <div onclick="zoomPreview(1)">⊡ Fit to Screen</div>
+                </div>
+            </div>
+            <div class="menu-item" style="position: relative;">
+                <span onclick="toggleMenu('helpMenu')" style="cursor: pointer; padding: 5px 10px;">❓ Help</span>
+                <div id="helpMenu" class="menu-dropdown" style="display: none;">
+                    <div onclick="showQuickStart()">📋 Quick Start Guide</div>
+                    <div onclick="showKeyboardShortcuts()">⌨️ Keyboard Shortcuts</div>
+                    <div onclick="showAbout()">ℹ️ About</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bed Tabs -->
+        <div id="bedTabs" style="background: #ecf0f1; padding: 10px 15px; display: flex; gap: 5px; align-items: center; overflow-x: auto;">
+            <div class="bed-tab active" data-bed-id="0" onclick="switchBed(0)">
+                <span>Memorial Plaques</span>
+                <button onclick="closeBed(0, event)" style="margin-left: 8px; background: none; border: none; cursor: pointer; font-size: 16px;">×</button>
+            </div>
+            <button onclick="addNewBed()" style="padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 20px;">+</button>
         </div>
         
         <div class="content">
@@ -366,6 +462,150 @@
     <script>
         // Auto-detect API base URL (works locally and on Render)
         const API_BASE = window.location.origin + '/api/layout';
+        
+        // Bed management
+        let beds = [
+            { id: 0, name: 'Memorial Plaques', config: null }
+        ];
+        let currentBedId = 0;
+        let zoomLevel = 1;
+        
+        function toggleMenu(menuId) {
+            // Close all menus first
+            document.querySelectorAll('.menu-dropdown').forEach(m => m.style.display = 'none');
+            // Toggle the clicked menu
+            const menu = document.getElementById(menuId);
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Close menus when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.menu-item')) {
+                document.querySelectorAll('.menu-dropdown').forEach(m => m.style.display = 'none');
+            }
+        });
+        
+        function addNewBed() {
+            const name = prompt('Enter bed name:', `Bed ${beds.length + 1}`);
+            if (!name) return;
+            
+            const newId = beds.length > 0 ? Math.max(...beds.map(b => b.id)) + 1 : 0;
+            beds.push({ id: newId, name, config: null });
+            renderTabs();
+            switchBed(newId);
+        }
+        
+        function closeBed(bedId, event) {
+            event.stopPropagation();
+            if (beds.length === 1) {
+                alert('Cannot close the last bed');
+                return;
+            }
+            if (!confirm(`Close "${beds.find(b => b.id === bedId).name}"?`)) return;
+            
+            beds = beds.filter(b => b.id !== bedId);
+            if (currentBedId === bedId) {
+                switchBed(beds[0].id);
+            }
+            renderTabs();
+        }
+        
+        function switchBed(bedId) {
+            // Save current bed config
+            if (currentBedId !== null) {
+                const currentBed = beds.find(b => b.id === currentBedId);
+                if (currentBed) {
+                    currentBed.config = {
+                        bedWidth: document.getElementById('bedWidth').value,
+                        bedHeight: document.getElementById('bedHeight').value,
+                        partWidth: document.getElementById('partWidth').value,
+                        partHeight: document.getElementById('partHeight').value,
+                        cols: document.getElementById('cols').value,
+                        rows: document.getElementById('rows').value
+                    };
+                }
+            }
+            
+            currentBedId = bedId;
+            const bed = beds.find(b => b.id === bedId);
+            
+            // Load bed config
+            if (bed.config) {
+                document.getElementById('bedWidth').value = bed.config.bedWidth;
+                document.getElementById('bedHeight').value = bed.config.bedHeight;
+                document.getElementById('partWidth').value = bed.config.partWidth;
+                document.getElementById('partHeight').value = bed.config.partHeight;
+                document.getElementById('cols').value = bed.config.cols;
+                document.getElementById('rows').value = bed.config.rows;
+            }
+            
+            renderTabs();
+            clearPreview();
+        }
+        
+        function renderTabs() {
+            const tabsContainer = document.getElementById('bedTabs');
+            tabsContainer.innerHTML = beds.map(bed => `
+                <div class="bed-tab ${bed.id === currentBedId ? 'active' : ''}" data-bed-id="${bed.id}" onclick="switchBed(${bed.id})">
+                    <span>${bed.name}</span>
+                    <button onclick="closeBed(${bed.id}, event)" style="margin-left: 8px; background: none; border: none; cursor: pointer; font-size: 16px;">×</button>
+                </div>
+            `).join('') + '<button onclick="addNewBed()" style="padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 20px;">+</button>';
+        }
+        
+        function renameBed() {
+            const bed = beds.find(b => b.id === currentBedId);
+            const newName = prompt('Enter new name:', bed.name);
+            if (newName) {
+                bed.name = newName;
+                renderTabs();
+            }
+        }
+        
+        function newBed() {
+            addNewBed();
+        }
+        
+        function clearPreview() {
+            document.getElementById('preview').innerHTML = '<div class="loading">Click "Generate SVG" above to see preview</div>';
+            document.getElementById('status').innerHTML = '';
+        }
+        
+        function resetDefaults() {
+            if (!confirm('Reset all settings to defaults?')) return;
+            document.getElementById('bedWidth').value = 480;
+            document.getElementById('bedHeight').value = 330;
+            document.getElementById('partWidth').value = 140;
+            document.getElementById('partHeight').value = 90;
+            document.getElementById('cols').value = 3;
+            document.getElementById('rows').value = 3;
+            document.getElementById('gapX').value = 5;
+            document.getElementById('gapY').value = 5;
+            clearPreview();
+        }
+        
+        function zoomPreview(factor) {
+            if (factor === 1) {
+                zoomLevel = 1;
+            } else {
+                zoomLevel *= factor;
+            }
+            const preview = document.getElementById('preview');
+            preview.style.transform = `scale(${zoomLevel})`;
+            preview.style.transformOrigin = 'top left';
+        }
+        
+        function showQuickStart() {
+            alert('Quick Start Guide:\n\n1. Select Product Type\n2. Choose or customize template\n3. Upload CSV with your data\n4. Map columns to fields\n5. Generate and download!');
+        }
+        
+        function showKeyboardShortcuts() {
+            alert('Keyboard Shortcuts:\n\nCtrl+S: Save Template\nCtrl+O: Open Template\nCtrl+E: Export SVG\nCtrl+P: Export PDF\n+/-: Zoom In/Out');
+        }
+        
+        function showAbout() {
+            alert('Template Layout Engine v1.0\n\nA powerful tool for generating custom print plates from templates.\n\nDeveloped for NBNE Origin');
+        }
         
         function buildTemplate() {
             return {
