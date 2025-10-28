@@ -105,20 +105,23 @@
         }
         
         .btn {
-            width: 100%;
-            padding: 14px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
+            padding: 12px 24px;
             border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
         }
         
         .btn:active {
@@ -126,8 +129,17 @@
         }
         
         .btn-secondary {
-            background: #6c757d;
-            margin-top: 10px;
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
         
         .preview {
@@ -446,16 +458,42 @@
             <div class="main">
                 <div id="status"></div>
                 
-                <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; gap: 10px; align-items: center;">
-                    <button class="btn" onclick="generateSVG()" style="flex: 1;">🎨 Generate SVG</button>
-                    <button class="btn btn-secondary" onclick="downloadSVG()" style="flex: 1;">💾 Download SVG</button>
-                    <button class="btn btn-secondary" onclick="downloadPDF()" style="flex: 1;">📄 Download PDF</button>
+                <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; gap: 10px; align-items: stretch;">
+                    <button class="btn" onclick="generateSVG()" style="flex: 1; padding: 12px;">🎨 Generate SVG</button>
+                    <button class="btn btn-secondary" onclick="downloadSVG()" style="flex: 1; padding: 12px;">💾 Download SVG</button>
+                    <button class="btn btn-secondary" onclick="downloadPDF()" style="flex: 1; padding: 12px;">📄 Download PDF</button>
                 </div>
                 
                 <div class="preview" id="preview">
                     <div class="loading">Click "Generate SVG" above to see preview</div>
                 </div>
+                
+                <!-- Stats Footer -->
+                <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 4px; display: flex; justify-content: space-around; text-align: center; font-size: 13px;">
+                    <div>
+                        <strong style="display: block; font-size: 20px; color: #667eea;" id="statsItems">0</strong>
+                        <span style="color: #666;">Items Generated</span>
+                    </div>
+                    <div>
+                        <strong style="display: block; font-size: 20px; color: #667eea;" id="statsTime">0s</strong>
+                        <span style="color: #666;">Processing Time</span>
+                    </div>
+                    <div>
+                        <strong style="display: block; font-size: 20px; color: #667eea;" id="statsBeds">1</strong>
+                        <span style="color: #666;">Active Beds</span>
+                    </div>
+                </div>
             </div>
+        </div>
+        
+        <!-- Professional Footer -->
+        <div style="background: #2c3e50; color: white; padding: 20px; text-align: center; margin-top: 20px;">
+            <p style="margin: 0; font-size: 14px;">
+                <strong>Template Layout Engine</strong> v1.0 | Developed for NBNE Origin
+            </p>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #bdc3c7;">
+                Transform bulk orders into production-ready print plates in seconds
+            </p>
         </div>
     </div>
     
@@ -1176,6 +1214,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
         
         async function generateSVG() {
             const status = document.getElementById('status');
+            const startTime = Date.now();
             
             // Validate inputs
             const bedWidth = parseFloat(document.getElementById('bedWidth').value);
@@ -1226,6 +1265,13 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 const data = await response.json();
                 const svgContent = data.svg || data;
                 document.getElementById('preview').innerHTML = svgContent;
+                
+                // Update stats
+                const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                document.getElementById('statsItems').textContent = totalSlots;
+                document.getElementById('statsTime').textContent = processingTime + 's';
+                document.getElementById('statsBeds').textContent = beds.length;
+                
                 status.innerHTML = '<div class="success">✅ Generated successfully! You can now download as PDF or edit the SVG.</div>';
                 
             } catch (error) {
