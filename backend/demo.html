@@ -222,7 +222,24 @@
                 
                 <div class="section">
                     <h3>CSV Upload</h3>
-                    <input type="file" id="csvFile" accept=".csv,.txt" style="margin-bottom: 10px;">
+                    <input type="file" id="csvFile" accept=".csv,.txt" style="margin-bottom: 10px;" onchange="previewCSV()">
+                    <div id="csvMapping" style="display:none; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 4px;">
+                        <strong>Column Mapping:</strong>
+                        <div style="margin-top: 8px;">
+                            <label style="display: block; margin: 4px 0;">
+                                <span style="display: inline-block; width: 100px;">Name Line:</span>
+                                <select id="mapNameLine" style="width: 150px;"></select>
+                            </label>
+                            <label style="display: block; margin: 4px 0;">
+                                <span style="display: inline-block; width: 100px;">Message:</span>
+                                <select id="mapMessageBlock" style="width: 150px;"></select>
+                            </label>
+                            <label style="display: block; margin: 4px 0;">
+                                <span style="display: inline-block; width: 100px;">Photo:</span>
+                                <select id="mapPhotoArea" style="width: 150px;"></select>
+                            </label>
+                        </div>
+                    </div>
                     <button class="btn" onclick="uploadCSV()">📤 Upload & Generate</button>
                     <div id="csvStatus" style="margin-top: 10px; font-size: 12px;"></div>
                 </div>
@@ -580,6 +597,49 @@
             reader.readAsText(file);
         }
         
+        function previewCSV() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                if (lines.length > 0) {
+                    const headers = lines[0].split(',').map(h => h.trim());
+                    
+                    // Populate mapping dropdowns
+                    const selects = ['mapNameLine', 'mapMessageBlock', 'mapPhotoArea'];
+                    selects.forEach(selectId => {
+                        const select = document.getElementById(selectId);
+                        select.innerHTML = '<option value="">-- Skip --</option>';
+                        headers.forEach((header, idx) => {
+                            const option = document.createElement('option');
+                            option.value = header;
+                            option.textContent = header;
+                            select.appendChild(option);
+                        });
+                        
+                        // Auto-select if name matches
+                        if (selectId === 'mapNameLine' && headers.some(h => h.toLowerCase().includes('name'))) {
+                            select.value = headers.find(h => h.toLowerCase().includes('name'));
+                        }
+                        if (selectId === 'mapMessageBlock' && headers.some(h => h.toLowerCase().includes('message') || h.toLowerCase().includes('text'))) {
+                            select.value = headers.find(h => h.toLowerCase().includes('message') || h.toLowerCase().includes('text'));
+                        }
+                        if (selectId === 'mapPhotoArea' && headers.some(h => h.toLowerCase().includes('photo') || h.toLowerCase().includes('image'))) {
+                            select.value = headers.find(h => h.toLowerCase().includes('photo') || h.toLowerCase().includes('image'));
+                        }
+                    });
+                    
+                    document.getElementById('csvMapping').style.display = 'block';
+                }
+            };
+            reader.readAsText(file);
+        }
+        
         async function uploadCSV() {
             const fileInput = document.getElementById('csvFile');
             const file = fileInput.files[0];
@@ -593,9 +653,20 @@
             status.innerHTML = '⏳ Uploading and generating...';
             
             try {
+                // Build column mapping from UI
+                const mapping = {};
+                const nameLineCol = document.getElementById('mapNameLine').value;
+                const messageBlockCol = document.getElementById('mapMessageBlock').value;
+                const photoAreaCol = document.getElementById('mapPhotoArea').value;
+                
+                if (nameLineCol) mapping[nameLineCol] = 'nameLine';
+                if (messageBlockCol) mapping[messageBlockCol] = 'messageBlock';
+                if (photoAreaCol) mapping[photoAreaCol] = 'photoArea';
+                
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('template', JSON.stringify(buildTemplate()));
+                formData.append('column_mapping', JSON.stringify(mapping));
                 formData.append('has_header', 'true');
                 formData.append('format', 'svg');
                 
