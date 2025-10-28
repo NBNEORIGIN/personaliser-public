@@ -207,10 +207,24 @@
                 </div>
                 
                 <div class="section">
+                    <h3>Product Type</h3>
+                    <select id="productType" onchange="switchProductType()" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                        <option value="text">Text Products (Memorial, Business Cards, Labels)</option>
+                        <option value="photo">Photo Products (Photo Stakes, ID Cards)</option>
+                    </select>
+                </div>
+                
+                <div class="section">
                     <h3>Quick Templates</h3>
-                    <button class="btn btn-secondary" onclick="loadTemplate('memorial')">Memorial Plaques</button>
-                    <button class="btn btn-secondary" onclick="loadTemplate('business')">Business Cards</button>
-                    <button class="btn btn-secondary" onclick="loadTemplate('labels')">Product Labels</button>
+                    <div id="textTemplates">
+                        <button class="btn btn-secondary" onclick="loadTemplate('memorial')">Memorial Plaques</button>
+                        <button class="btn btn-secondary" onclick="loadTemplate('business')">Business Cards</button>
+                        <button class="btn btn-secondary" onclick="loadTemplate('labels')">Product Labels</button>
+                    </div>
+                    <div id="photoTemplates" style="display:none;">
+                        <button class="btn btn-secondary" onclick="loadTemplate('photo_memorial')">Photo Memorial Stakes</button>
+                        <button class="btn btn-secondary" onclick="loadTemplate('photo_id')">Photo ID Cards</button>
+                    </div>
                 </div>
                 
                 <div class="section">
@@ -234,9 +248,13 @@
                                 <span style="display: inline-block; width: 100px;">Message:</span>
                                 <select id="mapMessageBlock" style="width: 150px;"></select>
                             </label>
-                            <label style="display: block; margin: 4px 0;">
-                                <span style="display: inline-block; width: 100px;">Photo:</span>
+                            <label id="photoMappingRow" style="display: block; margin: 4px 0;">
+                                <span style="display: inline-block; width: 100px;">Photo Path:</span>
                                 <select id="mapPhotoArea" style="width: 150px;"></select>
+                            </label>
+                            <label id="graphicMappingRow" style="display: none; margin: 4px 0;">
+                                <span style="display: inline-block; width: 100px;">Graphic:</span>
+                                <select id="mapBorderFrame" style="width: 150px;"></select>
                             </label>
                         </div>
                     </div>
@@ -499,6 +517,22 @@
             }
         }
         
+        function switchProductType() {
+            const productType = document.getElementById('productType').value;
+            
+            if (productType === 'text') {
+                document.getElementById('textTemplates').style.display = 'block';
+                document.getElementById('photoTemplates').style.display = 'none';
+                document.getElementById('photoMappingRow').style.display = 'none';
+                document.getElementById('graphicMappingRow').style.display = 'block';
+            } else {
+                document.getElementById('textTemplates').style.display = 'none';
+                document.getElementById('photoTemplates').style.display = 'block';
+                document.getElementById('photoMappingRow').style.display = 'block';
+                document.getElementById('graphicMappingRow').style.display = 'none';
+            }
+        }
+        
         function loadTemplate(type) {
             const templates = {
                 memorial: {
@@ -527,6 +561,24 @@
                     message0: "SKU: PA-001\n$29.99",
                     name1: "Product B",
                     message1: "SKU: PB-002\n$39.99"
+                },
+                photo_memorial: {
+                    bedWidth: 480, bedHeight: 330,
+                    partWidth: 140, partHeight: 90,
+                    cols: 3, rows: 3, gapX: 5, gapY: 5,
+                    name0: "John Smith",
+                    message0: "1950 – 2024\nForever in our hearts",
+                    name1: "Jane Doe",
+                    message1: "1955 – 2023\nLoved and missed"
+                },
+                photo_id: {
+                    bedWidth: 600, bedHeight: 400,
+                    partWidth: 85, partHeight: 55,
+                    cols: 6, rows: 6, gapX: 3, gapY: 3,
+                    name0: "John Smith",
+                    message0: "Employee ID: 12345",
+                    name1: "Jane Doe",
+                    message1: "Employee ID: 12346"
                 }
             };
             
@@ -611,9 +663,11 @@
                     const headers = lines[0].split(',').map(h => h.trim());
                     
                     // Populate mapping dropdowns
-                    const selects = ['mapNameLine', 'mapMessageBlock', 'mapPhotoArea'];
+                    const selects = ['mapNameLine', 'mapMessageBlock', 'mapPhotoArea', 'mapBorderFrame'];
                     selects.forEach(selectId => {
                         const select = document.getElementById(selectId);
+                        if (!select) return;
+                        
                         select.innerHTML = '<option value="">-- Skip --</option>';
                         headers.forEach((header, idx) => {
                             const option = document.createElement('option');
@@ -626,11 +680,14 @@
                         if (selectId === 'mapNameLine' && headers.some(h => h.toLowerCase().includes('name'))) {
                             select.value = headers.find(h => h.toLowerCase().includes('name'));
                         }
-                        if (selectId === 'mapMessageBlock' && headers.some(h => h.toLowerCase().includes('message') || h.toLowerCase().includes('text'))) {
-                            select.value = headers.find(h => h.toLowerCase().includes('message') || h.toLowerCase().includes('text'));
+                        if (selectId === 'mapMessageBlock' && headers.some(h => h.toLowerCase().includes('message') || h.toLowerCase().includes('text') || h.toLowerCase().includes('date'))) {
+                            select.value = headers.find(h => h.toLowerCase().includes('message') || h.toLowerCase().includes('text') || h.toLowerCase().includes('date'));
                         }
                         if (selectId === 'mapPhotoArea' && headers.some(h => h.toLowerCase().includes('photo') || h.toLowerCase().includes('image'))) {
                             select.value = headers.find(h => h.toLowerCase().includes('photo') || h.toLowerCase().includes('image'));
+                        }
+                        if (selectId === 'mapBorderFrame' && headers.some(h => h.toLowerCase().includes('graphic') || h.toLowerCase().includes('border') || h.toLowerCase().includes('frame'))) {
+                            select.value = headers.find(h => h.toLowerCase().includes('graphic') || h.toLowerCase().includes('border') || h.toLowerCase().includes('frame'));
                         }
                     });
                     
@@ -657,11 +714,13 @@
                 const mapping = {};
                 const nameLineCol = document.getElementById('mapNameLine').value;
                 const messageBlockCol = document.getElementById('mapMessageBlock').value;
-                const photoAreaCol = document.getElementById('mapPhotoArea').value;
+                const photoAreaCol = document.getElementById('mapPhotoArea')?.value;
+                const borderFrameCol = document.getElementById('mapBorderFrame')?.value;
                 
                 if (nameLineCol) mapping[nameLineCol] = 'nameLine';
                 if (messageBlockCol) mapping[messageBlockCol] = 'messageBlock';
                 if (photoAreaCol) mapping[photoAreaCol] = 'photoArea';
+                if (borderFrameCol) mapping[borderFrameCol] = 'borderFrame';
                 
                 const formData = new FormData();
                 formData.append('file', file);
