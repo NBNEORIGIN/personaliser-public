@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List
 import io
 
-from app.layout_engine import (
+from ..layout_engine import (
     REGULAR_STAKE_3X3,
     convert_regular_stakes_order,
     renderPlateSVG,

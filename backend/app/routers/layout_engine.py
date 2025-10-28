@@ -10,8 +10,8 @@ from pydantic import BaseModel
 from typing import Optional
 import io
 
-from app.layout_engine import TemplateJSON, ContentJSON, renderPlateSVG
-from app.layout_engine.pdf_export import export_svg_to_pdf
+from ..layout_engine import TemplateJSON, ContentJSON, renderPlateSVG
+from ..layout_engine.pdf_export import export_svg_to_pdf
 
 
 router = APIRouter(prefix="/api/layout", tags=["Layout Engine"])
