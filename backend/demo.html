@@ -464,8 +464,10 @@
                     <button class="btn btn-secondary" onclick="downloadPDF()" style="flex: 1; padding: 12px;">📄 Download PDF</button>
                 </div>
                 
-                <div class="preview" id="preview">
-                    <div class="loading">Click "Generate SVG" above to see preview</div>
+                <div id="previewContainer">
+                    <div class="preview" id="preview">
+                        <div class="loading">Click "Generate SVG" above to see preview</div>
+                    </div>
                 </div>
                 
                 <!-- Stats Footer -->
@@ -1115,6 +1117,15 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                     const mappingDiv = document.getElementById('mappingFields');
                     mappingDiv.innerHTML = '';
                     
+                    // Friendly names for element IDs
+                    const friendlyNames = {
+                        'nameLine': 'Name',
+                        'messageBlock': 'Message/Description',
+                        'additionalText': 'Date/Additional Info',
+                        'photoArea': 'Photo/Image',
+                        'borderFrame': 'Border/Graphic'
+                    };
+                    
                     elements.forEach((element, idx) => {
                         const label = document.createElement('label');
                         label.style.display = 'block';
@@ -1122,8 +1133,10 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                         
                         const span = document.createElement('span');
                         span.style.display = 'inline-block';
-                        span.style.width = '120px';
-                        span.textContent = `${element.id}:`;
+                        span.style.width = '150px';
+                        span.style.fontWeight = '500';
+                        const displayName = friendlyNames[element.id] || element.id;
+                        span.textContent = `${displayName}:`;
                         
                         const select = document.createElement('select');
                         select.id = `map_${element.id}`;
@@ -1137,17 +1150,41 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                             select.appendChild(option);
                         });
                         
-                        // Auto-select: try name matching, then position
-                        const elementIdLower = element.id.toLowerCase();
-                        const matchedHeader = headers.find(h => {
-                            const hLower = h.toLowerCase();
-                            return hLower.includes(elementIdLower) || elementIdLower.includes(hLower);
-                        });
+                        // Improved auto-select logic
+                        let matchedHeader = null;
+                        
+                        // First, try exact friendly name match
+                        const friendlyName = friendlyNames[element.id];
+                        if (friendlyName) {
+                            matchedHeader = headers.find(h => {
+                                const hLower = h.toLowerCase();
+                                const fLower = friendlyName.toLowerCase();
+                                return hLower === fLower || hLower.includes(fLower.split('/')[0].trim().toLowerCase());
+                            });
+                        }
+                        
+                        // Then try element ID match
+                        if (!matchedHeader) {
+                            const elementIdLower = element.id.toLowerCase();
+                            matchedHeader = headers.find(h => {
+                                const hLower = h.toLowerCase();
+                                return hLower.includes(elementIdLower) || elementIdLower.includes(hLower);
+                            });
+                        }
+                        
+                        // Smart positional mapping for common patterns
+                        if (!matchedHeader) {
+                            if (element.id === 'nameLine' && idx === 0 && headers.length > 0) {
+                                matchedHeader = headers[0]; // First column usually name
+                            } else if (element.id === 'additionalText' && headers.length > 2) {
+                                matchedHeader = headers[1]; // Second column often date
+                            } else if (element.id === 'messageBlock' && headers.length > 2) {
+                                matchedHeader = headers[2]; // Third column often message
+                            }
+                        }
                         
                         if (matchedHeader) {
                             select.value = matchedHeader;
-                        } else if (idx < headers.length) {
-                            select.value = headers[idx];
                         }
                         
                         label.appendChild(span);
@@ -1171,7 +1208,11 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             }
             
             const status = document.getElementById('csvStatus');
+            const mainStatus = document.getElementById('status');
             status.innerHTML = '⏳ Uploading and generating...';
+            mainStatus.innerHTML = '<div class="loading">⏳ Processing CSV...</div>';
+            
+            const startTime = Date.now();
             
             try {
                 // Build column mapping from UI dynamically
@@ -1188,7 +1229,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 
                 const formData = new FormData();
                 formData.append('file', file);
-                formData.append('template', JSON.stringify(buildTemplate()));
+                formData.append('template', JSON.stringify(template));
                 formData.append('column_mapping', JSON.stringify(mapping));
                 formData.append('has_header', 'true');
                 formData.append('format', 'svg');
@@ -1203,12 +1244,190 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 }
                 
                 const svgContent = await response.text();
-                document.getElementById('preview').innerHTML = svgContent;
-                status.innerHTML = '<span style="color: green;">✅ CSV processed successfully!</span>';
-                document.getElementById('status').innerHTML = '<div class="success">✅ Generated from CSV!</div>';
+                
+                // Calculate how many items per bed
+                const slotsPerBed = template.tiling.cols * template.tiling.rows;
+                
+                // Count total items from CSV
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const text = e.target.result;
+                    const lines = text.split('\n').filter(l => l.trim());
+                    const totalItems = lines.length - 1; // Minus header
+                    const totalPages = Math.ceil(totalItems / slotsPerBed);
+                    
+                    // Clear preview container
+                    const previewContainer = document.getElementById('previewContainer');
+                    previewContainer.innerHTML = '';
+                    
+                    // Generate multiple pages if needed
+                    for (let page = 0; page < totalPages; page++) {
+                        const pageDiv = document.createElement('div');
+                        pageDiv.style.marginBottom = '30px';
+                        
+                        const pageHeader = document.createElement('div');
+                        pageHeader.style.padding = '10px';
+                        pageHeader.style.background = '#667eea';
+                        pageHeader.style.color = 'white';
+                        pageHeader.style.borderRadius = '4px 4px 0 0';
+                        pageHeader.style.fontWeight = 'bold';
+                        pageHeader.style.display = 'flex';
+                        pageHeader.style.justifyContent = 'space-between';
+                        pageHeader.style.alignItems = 'center';
+                        
+                        const startItem = page * slotsPerBed + 1;
+                        const endItem = Math.min((page + 1) * slotsPerBed, totalItems);
+                        
+                        pageHeader.innerHTML = `
+                            <span>Page ${page + 1} of ${totalPages} - Items ${startItem}-${endItem}</span>
+                            <div>
+                                <button onclick="downloadPageSVG(${page})" style="padding: 5px 10px; margin-right: 5px; background: white; color: #667eea; border: none; border-radius: 4px; cursor: pointer;">💾 SVG</button>
+                                <button onclick="downloadPagePDF(${page})" style="padding: 5px 10px; background: white; color: #667eea; border: none; border-radius: 4px; cursor: pointer;">📄 PDF</button>
+                            </div>
+                        `;
+                        
+                        const previewDiv = document.createElement('div');
+                        previewDiv.className = 'preview';
+                        previewDiv.id = `preview-page-${page}`;
+                        previewDiv.style.border = '2px solid #667eea';
+                        previewDiv.style.borderTop = 'none';
+                        previewDiv.innerHTML = '<div class="loading">⏳ Generating page...</div>';
+                        
+                        pageDiv.appendChild(pageHeader);
+                        pageDiv.appendChild(previewDiv);
+                        previewContainer.appendChild(pageDiv);
+                    }
+                    
+                    // Generate each page
+                    for (let page = 0; page < totalPages; page++) {
+                        await generatePage(page, file, template, mapping, slotsPerBed);
+                    }
+                    
+                    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                    document.getElementById('statsItems').textContent = totalItems;
+                    document.getElementById('statsTime').textContent = processingTime + 's';
+                    document.getElementById('statsBeds').textContent = beds.length;
+                    
+                    status.innerHTML = '<span style="color: green;">✅ CSV processed successfully!</span>';
+                    mainStatus.innerHTML = `<div class="success">✅ Generated ${totalPages} page(s) with ${totalItems} items!</div>`;
+                };
+                reader.readAsText(file);
                 
             } catch (error) {
                 status.innerHTML = `<span style="color: red;">❌ Error: ${error.message}</span>`;
+                mainStatus.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function generatePage(pageNum, file, template, mapping, slotsPerBed) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('template', JSON.stringify(template));
+                formData.append('column_mapping', JSON.stringify(mapping));
+                formData.append('has_header', 'true');
+                formData.append('format', 'svg');
+                formData.append('page', pageNum.toString());
+                formData.append('items_per_page', slotsPerBed.toString());
+                
+                const response = await fetch(`${API_BASE}/upload/csv`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const svgContent = await response.text();
+                document.getElementById(`preview-page-${pageNum}`).innerHTML = svgContent;
+                
+            } catch (error) {
+                document.getElementById(`preview-page-${pageNum}`).innerHTML = 
+                    `<div class="error">❌ Error generating page: ${error.message}</div>`;
+            }
+        }
+        
+        function downloadPageSVG(pageNum) {
+            const preview = document.getElementById(`preview-page-${pageNum}`);
+            const svgElement = preview.querySelector('svg');
+            
+            if (!svgElement) {
+                alert('❌ No SVG found for this page');
+                return;
+            }
+            
+            const svgData = svgElement.outerHTML;
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `layout-page-${pageNum + 1}.svg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        async function downloadPagePDF(pageNum) {
+            const preview = document.getElementById(`preview-page-${pageNum}`);
+            const svgElement = preview.querySelector('svg');
+            
+            if (!svgElement) {
+                alert('❌ No SVG found for this page');
+                return;
+            }
+            
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="loading">⏳ Converting page to PDF...</div>';
+            
+            try {
+                const template = buildTemplate();
+                const formData = new FormData();
+                const csvFile = document.getElementById('csvFile').files[0];
+                
+                const mapping = {};
+                const elements = template.part.elements.filter(el => el.type === 'text' || el.type === 'image' || el.type === 'graphic');
+                elements.forEach(element => {
+                    const select = document.getElementById(`map_${element.id}`);
+                    if (select && select.value) {
+                        mapping[select.value] = element.id;
+                    }
+                });
+                
+                const slotsPerBed = template.tiling.cols * template.tiling.rows;
+                
+                formData.append('file', csvFile);
+                formData.append('template', JSON.stringify(template));
+                formData.append('column_mapping', JSON.stringify(mapping));
+                formData.append('has_header', 'true');
+                formData.append('format', 'pdf');
+                formData.append('page', pageNum.toString());
+                formData.append('items_per_page', slotsPerBed.toString());
+                
+                const response = await fetch(`${API_BASE}/upload/csv`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `layout-page-${pageNum + 1}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                status.innerHTML = '<div class="success">✅ PDF downloaded!</div>';
+                
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
             }
         }
         

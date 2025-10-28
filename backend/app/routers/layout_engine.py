@@ -164,10 +164,12 @@ async def upload_csv(
     template: str = Form(...),
     column_mapping: Optional[str] = Form(None),
     has_header: bool = Form(True),
-    format: str = Form("svg")
+    format: str = Form("svg"),
+    page: Optional[int] = Form(None),
+    items_per_page: Optional[int] = Form(None)
 ):
     """
-    Upload CSV file and generate layout.
+    Upload CSV file and generate layout with pagination support.
     
     **Parameters:**
     - `file`: CSV file upload
@@ -176,6 +178,8 @@ async def upload_csv(
                        e.g., {"Name": "line1", "Date": "line2"}
     - `has_header`: Whether CSV has header row
     - `format`: Output format ("svg" or "pdf")
+    - `page`: Optional page number (0-indexed) for pagination
+    - `items_per_page`: Optional items per page for pagination
     
     **Returns:**
     - SVG or PDF file download
@@ -197,6 +201,12 @@ async def upload_csv(
         
         # Parse CSV to content
         content = parse_csv_to_content(csv_data, mapping, has_header)
+        
+        # Handle pagination if requested
+        if page is not None and items_per_page is not None:
+            start_idx = page * items_per_page
+            end_idx = start_idx + items_per_page
+            content.slots = content.slots[start_idx:end_idx]
         
         # Debug logging
         print(f"[CSV DEBUG] Column mapping: {mapping}")
