@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout Engine Demo - Investor Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 0;
+        }
+        
+        .sidebar {
+            background: #f8f9fa;
+            padding: 30px;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+        
+        .main {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #667eea;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .input-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+        
+        .preview {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            min-height: 500px;
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+        }
+        
+        .preview svg {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .loading {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .error {
+            color: #dc3545;
+            padding: 15px;
+            background: #f8d7da;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .success {
+            color: #155724;
+            padding: 15px;
+            background: #d4edda;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Template Layout Engine</h1>
+            <p>Interactive Demo - Generate Custom Print Plates</p>
+        </div>
+        
+        <div class="content">
+            <div class="sidebar">
+                <div class="info-box">
+                    <strong>💡 Quick Demo:</strong><br>
+                    This system generates print plates from templates. No code changes needed for new products!
+                </div>
+                
+                <div class="section">
+                    <h3>Bed Configuration</h3>
+                    <div class="grid-inputs">
+                        <div class="input-group">
+                            <label>Width (mm)</label>
+                            <input type="number" id="bedWidth" value="480">
+                        </div>
+                        <div class="input-group">
+                            <label>Height (mm)</label>
+                            <input type="number" id="bedHeight" value="330">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>Part Configuration</h3>
+                    <div class="grid-inputs">
+                        <div class="input-group">
+                            <label>Width (mm)</label>
+                            <input type="number" id="partWidth" value="140">
+                        </div>
+                        <div class="input-group">
+                            <label>Height (mm)</label>
+                            <input type="number" id="partHeight" value="90">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>Tiling</h3>
+                    <div class="grid-inputs">
+                        <div class="input-group">
+                            <label>Columns</label>
+                            <input type="number" id="cols" value="3" min="1" max="10">
+                        </div>
+                        <div class="input-group">
+                            <label>Rows</label>
+                            <input type="number" id="rows" value="3" min="1" max="10">
+                        </div>
+                        <div class="input-group">
+                            <label>Gap X (mm)</label>
+                            <input type="number" id="gapX" value="5">
+                        </div>
+                        <div class="input-group">
+                            <label>Gap Y (mm)</label>
+                            <input type="number" id="gapY" value="5">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>Content - Slot 0</h3>
+                    <div class="input-group">
+                        <label>Name Line</label>
+                        <input type="text" id="name0" value="In loving memory" placeholder="Enter text...">
+                    </div>
+                    <div class="input-group">
+                        <label>Message (multiline)</label>
+                        <textarea id="message0" placeholder="Enter message...">John Kendall Newman
+1952 – 2024</textarea>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>Content - Slot 1</h3>
+                    <div class="input-group">
+                        <label>Name Line</label>
+                        <input type="text" id="name1" value="Forever in our hearts" placeholder="Enter text...">
+                    </div>
+                    <div class="input-group">
+                        <label>Message (multiline)</label>
+                        <textarea id="message1" placeholder="Enter message...">Mary Elizabeth Smith
+1945 – 2024</textarea>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="generateSVG()">🎨 Generate SVG</button>
+                <button class="btn btn-secondary" onclick="downloadPDF()">📄 Download PDF</button>
+            </div>
+            
+            <div class="main">
+                <div id="status"></div>
+                <div class="preview" id="preview">
+                    <div class="loading">Click "Generate SVG" to see preview</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000/api/layout';
+        
+        function buildTemplate() {
+            return {
+                bed: {
+                    width_mm: parseFloat(document.getElementById('bedWidth').value),
+                    height_mm: parseFloat(document.getElementById('bedHeight').value),
+                    margin_mm: { left: 10, top: 10 }
+                },
+                part: {
+                    width_mm: parseFloat(document.getElementById('partWidth').value),
+                    height_mm: parseFloat(document.getElementById('partHeight').value),
+                    elements: [
+                        {
+                            type: "text",
+                            id: "nameLine",
+                            x_mm: 10,
+                            y_mm: 10,
+                            w_mm: 120,
+                            h_mm: 10,
+                            font_family: "Times New Roman",
+                            font_size_pt: 14,
+                            text_align: "center",
+                            multiline: false,
+                            editable: true
+                        },
+                        {
+                            type: "text",
+                            id: "messageBlock",
+                            x_mm: 10,
+                            y_mm: 25,
+                            w_mm: 120,
+                            h_mm: 30,
+                            font_family: "Times New Roman",
+                            font_size_pt: 10,
+                            text_align: "center",
+                            multiline: true,
+                            editable: true
+                        },
+                        {
+                            type: "image",
+                            id: "photoArea",
+                            x_mm: 10,
+                            y_mm: 60,
+                            w_mm: 40,
+                            h_mm: 40,
+                            fit: "cover",
+                            clip_shape: { kind: "rounded_rect", radius_mm: 4 },
+                            editable: true
+                        },
+                        {
+                            type: "graphic",
+                            id: "borderFrame",
+                            x_mm: 0,
+                            y_mm: 0,
+                            w_mm: parseFloat(document.getElementById('partWidth').value),
+                            h_mm: parseFloat(document.getElementById('partHeight').value),
+                            source: "border.svg",
+                            editable: false
+                        }
+                    ]
+                },
+                tiling: {
+                    cols: parseInt(document.getElementById('cols').value),
+                    rows: parseInt(document.getElementById('rows').value),
+                    gap_x_mm: parseFloat(document.getElementById('gapX').value),
+                    gap_y_mm: parseFloat(document.getElementById('gapY').value),
+                    offset_x_mm: 0,
+                    offset_y_mm: 0
+                }
+            };
+        }
+        
+        function buildContent() {
+            return {
+                slots: [
+                    {
+                        slot_index: 0,
+                        nameLine: document.getElementById('name0').value,
+                        messageBlock: document.getElementById('message0').value,
+                        photoArea: "/uploads/photo-1.jpg"
+                    },
+                    {
+                        slot_index: 1,
+                        nameLine: document.getElementById('name1').value,
+                        messageBlock: document.getElementById('message1').value,
+                        photoArea: "/uploads/photo-2.jpg"
+                    }
+                ]
+            };
+        }
+        
+        async function generateSVG() {
+            const status = document.getElementById('status');
+            const preview = document.getElementById('preview');
+            
+            status.innerHTML = '<div class="loading">⏳ Generating SVG...</div>';
+            preview.innerHTML = '<div class="loading">Processing...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        template: buildTemplate(),
+                        content: buildContent(),
+                        format: 'svg'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    status.innerHTML = '<div class="success">✅ SVG generated successfully!</div>';
+                    preview.innerHTML = data.svg;
+                } else {
+                    throw new Error(data.message || 'Generation failed');
+                }
+                
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                preview.innerHTML = '<div class="loading">Failed to generate</div>';
+            }
+        }
+        
+        async function downloadPDF() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="loading">⏳ Generating PDF...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/generate/pdf`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        template: buildTemplate(),
+                        content: buildContent()
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'layout.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                status.innerHTML = '<div class="success">✅ PDF downloaded!</div>';
+                
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .settings import settings
-from .routers import catalog, ingest_amazon, jobs, assets
+from .routers import catalog, ingest_amazon, jobs, assets, layout_engine
 from .utils import sku_map
 import shutil
 
@@ -28,6 +28,7 @@ app.include_router(catalog.router, prefix=settings.API_PREFIX)
 app.include_router(ingest_amazon.router, prefix=settings.API_PREFIX)
 app.include_router(jobs.router, prefix=settings.API_PREFIX)
 app.include_router(assets.router, prefix=settings.API_PREFIX)
+app.include_router(layout_engine.router)  # Layout engine (has its own prefix)
 
 # Static mounts for previews and jobs artifacts
 app.mount("/static/previews", StaticFiles(directory=settings.PREVIEWS_DIR), name="previews")
@@ -68,7 +69,15 @@ async def status():
     return {
         "status": "operational",
         "service": "personaliser-api",
-        "version": "1.0.2",  # PDF processor enabled
+        "version": "1.0.3",  # Layout engine enabled
         "storage": settings.STORAGE_BACKEND,
-        "timestamp": "2025-10-25T16:57:00Z"
+        "timestamp": "2025-10-28T10:00:00Z"
     }
+
+@app.get("/demo")
+async def demo():
+    """Serve demo HTML page"""
+    from fastapi.responses import FileResponse
+    import os
+    demo_path = os.path.join(os.path.dirname(__file__), "..", "demo.html")
+    return FileResponse(demo_path)
