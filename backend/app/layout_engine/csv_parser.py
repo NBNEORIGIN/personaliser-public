@@ -40,9 +40,19 @@ def parse_csv_to_content(
         
         if has_header:
             # Row is a dict with column names as keys
+            if slot_index == 0:
+                print(f"[CSV PARSER] First row keys: {list(row.keys())}")
+                print(f"[CSV PARSER] First row values: {list(row.values())}")
+            
             for csv_col, element_id in column_mapping.items():
                 if csv_col in row:
-                    slot_data[element_id] = row[csv_col]
+                    value = row[csv_col]
+                    if slot_index == 0:
+                        print(f"[CSV PARSER] Mapping '{csv_col}' -> '{element_id}' = '{value}'")
+                    slot_data[element_id] = value
+                else:
+                    if slot_index == 0:
+                        print(f"[CSV PARSER] Column '{csv_col}' NOT FOUND in row")
         else:
             # Row is a list, mapping uses indices
             for csv_idx, element_id in column_mapping.items():
