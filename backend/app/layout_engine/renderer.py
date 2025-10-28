@@ -1,0 +1,316 @@
+"""
+SVG renderer for template-driven layout engine.
+
+Generates editable SVG output with live text, images, and graphics.
+"""
+
+from typing import Optional
+from .models import (
+    TemplateJSON, ContentJSON, SlotContent,
+    TextElement, ImageElement, GraphicElement, Element
+)
+from .utils import (
+    pt_to_mm, wrap_text, calculate_line_height,
+    escape_xml, generate_unique_id
+)
+
+
+def render_text_element(
+    element: TextElement,
+    content: str,
+    row: int,
+    col: int
+) -> str:
+    """
+    Render a text element as SVG <text> with live editable text.
+    
+    Args:
+        element: Text element definition
+        content: Text content to render
+        row: Row index for ID generation
+        col: Column index for ID generation
+        
+    Returns:
+        SVG markup string
+    """
+    if not content:
+        content = ""
+    
+    # Determine text anchor based on alignment
+    text_anchor_map = {
+        "left": "start",
+        "center": "middle",
+        "right": "end"
+    }
+    text_anchor = text_anchor_map.get(element.text_align, "middle")
+    
+    # Calculate x position based on alignment
+    if element.text_align == "center":
+        text_x = element.x_mm + element.w_mm / 2
+    elif element.text_align == "right":
+        text_x = element.x_mm + element.w_mm
+    else:  # left
+        text_x = element.x_mm
+    
+    # Calculate baseline y position (top of box + font size)
+    font_size_mm = pt_to_mm(element.font_size_pt)
+    baseline_y = element.y_mm + font_size_mm
+    
+    # Generate unique ID
+    element_id = generate_unique_id("text", row, col, element.id)
+    
+    # Build SVG
+    svg_parts = []
+    svg_parts.append(
+        f'<text id="{element_id}" '
+        f'x="{text_x}" y="{baseline_y}" '
+        f'font-family="{escape_xml(element.font_family)}" '
+        f'font-size="{element.font_size_pt}pt" '
+        f'text-anchor="{text_anchor}" '
+        f'fill="black">'
+    )
+    
+    if element.multiline:
+        # Split text into lines
+        lines = wrap_text(content, element.w_mm, element.font_size_pt, element.font_family)
+        line_height = calculate_line_height(element.font_size_pt)
+        
+        for i, line in enumerate(lines):
+            dy = 0 if i == 0 else line_height
+            svg_parts.append(
+                f'<tspan x="{text_x}" dy="{dy}">{escape_xml(line)}</tspan>'
+            )
+    else:
+        # Single line
+        svg_parts.append(f'{escape_xml(content)}')
+    
+    svg_parts.append('</text>')
+    
+    return '\n'.join(svg_parts)
+
+
+def render_image_element(
+    element: ImageElement,
+    image_path: Optional[str],
+    row: int,
+    col: int
+) -> str:
+    """
+    Render an image element as SVG <image> with optional clipping.
+    
+    Args:
+        element: Image element definition
+        image_path: Path/URL to image file
+        row: Row index for ID generation
+        col: Column index for ID generation
+        
+    Returns:
+        SVG markup string
+    """
+    if not image_path:
+        # Render placeholder rectangle
+        element_id = generate_unique_id("image-placeholder", row, col, element.id)
+        return (
+            f'<rect id="{element_id}" '
+            f'x="{element.x_mm}" y="{element.y_mm}" '
+            f'width="{element.w_mm}" height="{element.h_mm}" '
+            f'fill="#f0f0f0" stroke="#cccccc" stroke-width="0.5" />'
+        )
+    
+    svg_parts = []
+    element_id = generate_unique_id("image", row, col, element.id)
+    
+    # Handle clipping if defined
+    clip_path_id = None
+    if element.clip_shape:
+        clip_path_id = generate_unique_id("clip", row, col, element.id)
+        
+        # Create clipPath definition
+        svg_parts.append(f'<clipPath id="{clip_path_id}">')
+        
+        if element.clip_shape.kind == "rounded_rect":
+            svg_parts.append(
+                f'<rect x="{element.x_mm}" y="{element.y_mm}" '
+                f'width="{element.w_mm}" height="{element.h_mm}" '
+                f'rx="{element.clip_shape.radius_mm}" ry="{element.clip_shape.radius_mm}" />'
+            )
+        
+        svg_parts.append('</clipPath>')
+    
+    # Render image
+    # TODO: Handle fit modes (cover vs contain) - for now just stretch to fit
+    image_attrs = [
+        f'id="{element_id}"',
+        f'x="{element.x_mm}"',
+        f'y="{element.y_mm}"',
+        f'width="{element.w_mm}"',
+        f'height="{element.h_mm}"',
+        f'href="{escape_xml(image_path)}"',
+        'preserveAspectRatio="xMidYMid slice"' if element.fit == "cover" else 'preserveAspectRatio="xMidYMid meet"'
+    ]
+    
+    if clip_path_id:
+        image_attrs.append(f'clip-path="url(#{clip_path_id})"')
+    
+    svg_parts.append(f'<image {" ".join(image_attrs)} />')
+    
+    return '\n'.join(svg_parts)
+
+
+def render_graphic_element(
+    element: GraphicElement,
+    row: int,
+    col: int
+) -> str:
+    """
+    Render a static graphic element.
+    
+    Args:
+        element: Graphic element definition
+        row: Row index for ID generation
+        col: Column index for ID generation
+        
+    Returns:
+        SVG markup string
+    """
+    # TODO: Load and inline SVG from element.source
+    # For now, render a placeholder
+    element_id = generate_unique_id("graphic", row, col, element.id)
+    
+    return (
+        f'<!-- Graphic: {escape_xml(element.source)} -->\n'
+        f'<rect id="{element_id}" '
+        f'x="{element.x_mm}" y="{element.y_mm}" '
+        f'width="{element.w_mm}" height="{element.h_mm}" '
+        f'fill="none" stroke="#000000" stroke-width="0.5" />'
+    )
+
+
+def render_part(
+    template: TemplateJSON,
+    slot_content: Optional[SlotContent],
+    row: int,
+    col: int
+) -> str:
+    """
+    Render a single part/tile with all its elements.
+    
+    Args:
+        template: Template definition
+        slot_content: Content for this slot (or None for empty)
+        row: Row index
+        col: Column index
+        
+    Returns:
+        SVG markup string for this part
+    """
+    svg_parts = []
+    
+    # Render elements in order: images first, then text, then graphics (so borders are on top)
+    images = [e for e in template.part.elements if isinstance(e, ImageElement)]
+    texts = [e for e in template.part.elements if isinstance(e, TextElement)]
+    graphics = [e for e in template.part.elements if isinstance(e, GraphicElement)]
+    
+    # Render images
+    for element in images:
+        image_path = slot_content.get_content(element.id) if slot_content else None
+        svg_parts.append(render_image_element(element, image_path, row, col))
+    
+    # Render text
+    for element in texts:
+        content = slot_content.get_content(element.id) if slot_content else ""
+        svg_parts.append(render_text_element(element, content or "", row, col))
+    
+    # Render graphics
+    for element in graphics:
+        svg_parts.append(render_graphic_element(element, row, col))
+    
+    return '\n'.join(svg_parts)
+
+
+def renderPlateSVG(template: TemplateJSON, content: ContentJSON) -> str:
+    """
+    Render complete bed/plate SVG with all tiled parts.
+    
+    This is the main entry point for SVG generation.
+    
+    Args:
+        template: Template definition (bed, part, tiling)
+        content: Content payload for all slots
+        
+    Returns:
+        Complete SVG markup string
+    """
+    bed = template.bed
+    tiling = template.tiling
+    part = template.part
+    
+    # Build SVG header
+    svg_parts = []
+    svg_parts.append(
+        f'<svg width="{bed.width_mm}mm" height="{bed.height_mm}mm" '
+        f'viewBox="0 0 {bed.width_mm} {bed.height_mm}" '
+        f'xmlns="http://www.w3.org/2000/svg">'
+    )
+    
+    # Add metadata
+    svg_parts.append('<!-- Generated by Template Layout Engine -->')
+    svg_parts.append(f'<!-- Bed: {bed.width_mm}mm x {bed.height_mm}mm -->')
+    svg_parts.append(f'<!-- Part: {part.width_mm}mm x {part.height_mm}mm -->')
+    svg_parts.append(f'<!-- Tiling: {tiling.rows} rows x {tiling.cols} cols -->')
+    
+    # Render each tile
+    for row in range(tiling.rows):
+        for col in range(tiling.cols):
+            # Calculate tile position on bed
+            tile_x = (
+                bed.margin_mm.left +
+                tiling.offset_x_mm +
+                col * (part.width_mm + tiling.gap_x_mm)
+            )
+            tile_y = (
+                bed.margin_mm.top +
+                tiling.offset_y_mm +
+                row * (part.height_mm + tiling.gap_y_mm)
+            )
+            
+            # Get content for this slot
+            slot_index = row * tiling.cols + col
+            slot_content = content.get_slot(slot_index)
+            
+            # Create tile group with transform
+            tile_id = generate_unique_id("tile", row, col)
+            svg_parts.append(f'<g id="{tile_id}" transform="translate({tile_x}, {tile_y})">')
+            
+            # Render part content
+            svg_parts.append(render_part(template, slot_content, row, col))
+            
+            svg_parts.append('</g>')
+    
+    svg_parts.append('</svg>')
+    
+    return '\n'.join(svg_parts)
+
+
+def exportPDF(svg_string: str, output_path: str = "output.pdf") -> str:
+    """
+    Export SVG to PDF format.
+    
+    TODO: Implement actual SVG to PDF conversion using:
+    - cairosvg (Python library)
+    - Inkscape CLI (inkscape --export-pdf)
+    - rsvg-convert (librsvg)
+    - WeasyPrint
+    
+    Args:
+        svg_string: SVG markup to convert
+        output_path: Destination PDF file path
+        
+    Returns:
+        Path to generated PDF file
+    """
+    # Stub implementation
+    raise NotImplementedError(
+        "PDF export not yet implemented. "
+        "Consider using cairosvg, Inkscape CLI, or rsvg-convert for SVG→PDF conversion."
+    )
