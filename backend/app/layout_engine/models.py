@@ -22,11 +22,13 @@ class BaseElement(BaseModel):
     """Base class for all layout elements."""
     type: str
     id: str = Field(description="Unique identifier for this element")
-    x_mm: float = Field(description="X position in mm (relative to part origin)")
-    y_mm: float = Field(description="Y position in mm (relative to part origin)")
+    x_mm: float = Field(description="X position in mm (relative to part origin or anchor)")
+    y_mm: float = Field(description="Y position in mm (relative to part origin or anchor)")
     w_mm: float = Field(gt=0, description="Width in mm")
     h_mm: float = Field(gt=0, description="Height in mm")
     editable: bool = Field(default=True, description="Whether element can be edited in final output")
+    anchor_to: Optional[str] = Field(default=None, description="ID of element to position relative to")
+    anchor_point: Literal["top", "bottom", "left", "right", "center"] = Field(default="top", description="Which edge/point to anchor to")
 
 
 class TextElement(BaseElement):
@@ -70,6 +72,9 @@ class BedDefinition(BaseModel):
     width_mm: float = Field(gt=0, description="Bed width in mm")
     height_mm: float = Field(gt=0, description="Bed height in mm")
     margin_mm: BedMargin = Field(default_factory=BedMargin, description="Bed margins")
+    origin_marker: bool = Field(default=True, description="Add 0.1mm origin marker at bottom-left")
+    origin_x_mm: float = Field(default=0, description="Origin X position in mm")
+    origin_y_mm: float = Field(default=0, description="Origin Y position in mm")
 
 
 class PartDefinition(BaseModel):

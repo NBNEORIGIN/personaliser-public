@@ -186,6 +186,47 @@ def render_graphic_element(
     )
 
 
+def calculate_element_position(element: Element, elements: list) -> tuple[float, float]:
+    """
+    Calculate absolute position of element, accounting for anchor_to.
+    
+    Args:
+        element: Element to position
+        elements: All elements in the part (for anchor lookup)
+        
+    Returns:
+        Tuple of (absolute_x_mm, absolute_y_mm)
+    """
+    if not element.anchor_to:
+        # No anchor, use position as-is
+        return (element.x_mm, element.y_mm)
+    
+    # Find anchor element
+    anchor_element = None
+    for e in elements:
+        if e.id == element.anchor_to:
+            anchor_element = e
+            break
+    
+    if not anchor_element:
+        # Anchor not found, fallback to absolute position
+        return (element.x_mm, element.y_mm)
+    
+    # Calculate anchor point position
+    anchor_x, anchor_y = calculate_element_position(anchor_element, elements)
+    
+    if element.anchor_point == "bottom":
+        anchor_y += anchor_element.h_mm
+    elif element.anchor_point == "right":
+        anchor_x += anchor_element.w_mm
+    elif element.anchor_point == "center":
+        anchor_x += anchor_element.w_mm / 2
+        anchor_y += anchor_element.h_mm / 2
+    # "top" and "left" use anchor position as-is
+    
+    return (anchor_x + element.x_mm, anchor_y + element.y_mm)
+
+
 def render_part(
     template: TemplateJSON,
     slot_content: Optional[SlotContent],
@@ -206,24 +247,34 @@ def render_part(
     """
     svg_parts = []
     
+    # Calculate absolute positions for all elements (handling anchors)
+    elements_with_positions = []
+    for element in template.part.elements:
+        abs_x, abs_y = calculate_element_position(element, template.part.elements)
+        elements_with_positions.append((element, abs_x, abs_y))
+    
     # Render elements in order: images first, then text, then graphics (so borders are on top)
-    images = [e for e in template.part.elements if isinstance(e, ImageElement)]
-    texts = [e for e in template.part.elements if isinstance(e, TextElement)]
-    graphics = [e for e in template.part.elements if isinstance(e, GraphicElement)]
+    images = [(e, x, y) for e, x, y in elements_with_positions if isinstance(e, ImageElement)]
+    texts = [(e, x, y) for e, x, y in elements_with_positions if isinstance(e, TextElement)]
+    graphics = [(e, x, y) for e, x, y in elements_with_positions if isinstance(e, GraphicElement)]
     
     # Render images
-    for element in images:
+    for element, abs_x, abs_y in images:
+        # Create temporary element with absolute position
+        positioned_element = element.model_copy(update={"x_mm": abs_x, "y_mm": abs_y, "anchor_to": None})
         image_path = slot_content.get_content(element.id) if slot_content else None
-        svg_parts.append(render_image_element(element, image_path, row, col))
+        svg_parts.append(render_image_element(positioned_element, image_path, row, col))
     
     # Render text
-    for element in texts:
+    for element, abs_x, abs_y in texts:
+        positioned_element = element.model_copy(update={"x_mm": abs_x, "y_mm": abs_y, "anchor_to": None})
         content = slot_content.get_content(element.id) if slot_content else ""
-        svg_parts.append(render_text_element(element, content or "", row, col))
+        svg_parts.append(render_text_element(positioned_element, content or "", row, col))
     
     # Render graphics
-    for element in graphics:
-        svg_parts.append(render_graphic_element(element, row, col))
+    for element, abs_x, abs_y in graphics:
+        positioned_element = element.model_copy(update={"x_mm": abs_x, "y_mm": abs_y, "anchor_to": None})
+        svg_parts.append(render_graphic_element(positioned_element, row, col))
     
     return '\n'.join(svg_parts)
 
@@ -258,6 +309,19 @@ def renderPlateSVG(template: TemplateJSON, content: ContentJSON) -> str:
     svg_parts.append(f'<!-- Bed: {bed.width_mm}mm x {bed.height_mm}mm -->')
     svg_parts.append(f'<!-- Part: {part.width_mm}mm x {part.height_mm}mm -->')
     svg_parts.append(f'<!-- Tiling: {tiling.rows} rows x {tiling.cols} cols -->')
+    
+    # Add origin marker if enabled (0.1mm square at bottom-left)
+    if bed.origin_marker:
+        marker_size = 0.1
+        # SVG origin is top-left, so bottom-left is at y = height
+        marker_y = bed.height_mm - marker_size
+        svg_parts.append(
+            f'<rect id="origin-marker" '
+            f'x="{bed.origin_x_mm}" y="{marker_y}" '
+            f'width="{marker_size}" height="{marker_size}" '
+            f'fill="black" />'
+        )
+        svg_parts.append(f'<!-- Origin marker at ({bed.origin_x_mm}, {bed.origin_y_mm}) -->')
     
     # Render each tile
     for row in range(tiling.rows):

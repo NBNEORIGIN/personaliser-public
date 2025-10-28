@@ -4,14 +4,16 @@ REST API endpoints for template-driven layout engine.
 Provides HTTP interface for generating SVG and PDF outputs.
 """
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
 import io
+import json
 
 from ..layout_engine import TemplateJSON, ContentJSON, renderPlateSVG
 from ..layout_engine.pdf_export import export_svg_to_pdf
+from ..layout_engine.csv_parser import parse_csv_to_content, parse_tsv_to_content, auto_detect_mapping
 
 
 router = APIRouter(prefix="/api/layout", tags=["Layout Engine"])
@@ -153,6 +155,72 @@ async def generate_pdf(request: GenerateRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate PDF: {str(e)}"
+        )
+
+
+@router.post("/upload/csv")
+async def upload_csv(
+    file: UploadFile = File(...),
+    template: str = Form(...),
+    column_mapping: Optional[str] = Form(None),
+    has_header: bool = Form(True),
+    format: str = Form("svg")
+):
+    """
+    Upload CSV file and generate layout.
+    
+    **Parameters:**
+    - `file`: CSV file upload
+    - `template`: JSON string of template definition
+    - `column_mapping`: Optional JSON string mapping CSV columns to element IDs
+                       e.g., {"Name": "line1", "Date": "line2"}
+    - `has_header`: Whether CSV has header row
+    - `format`: Output format ("svg" or "pdf")
+    
+    **Returns:**
+    - SVG or PDF file download
+    """
+    try:
+        # Read CSV data
+        csv_data = (await file.read()).decode('utf-8')
+        
+        # Parse template
+        template_obj = TemplateJSON.model_validate_json(template)
+        
+        # Parse or auto-detect column mapping
+        if column_mapping:
+            mapping = json.loads(column_mapping)
+        else:
+            # Auto-detect mapping
+            element_ids = [e.id for e in template_obj.part.elements]
+            mapping = auto_detect_mapping(csv_data, element_ids, has_header)
+        
+        # Parse CSV to content
+        content = parse_csv_to_content(csv_data, mapping, has_header)
+        
+        # Generate SVG
+        svg_output = renderPlateSVG(template_obj, content)
+        
+        if format == "pdf":
+            # Convert to PDF
+            pdf_bytes = export_svg_to_pdf(svg_output)
+            return StreamingResponse(
+                io.BytesIO(pdf_bytes),
+                media_type="application/pdf",
+                headers={"Content-Disposition": "attachment; filename=layout.pdf"}
+            )
+        else:
+            # Return SVG
+            return Response(
+                content=svg_output,
+                media_type="image/svg+xml",
+                headers={"Content-Disposition": "attachment; filename=layout.svg"}
+            )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to process CSV: {str(e)}"
         )
 
 
