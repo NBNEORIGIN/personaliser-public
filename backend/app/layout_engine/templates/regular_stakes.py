@@ -4,7 +4,7 @@ Template definition for regular memorial stakes.
 This replaces the hardcoded regular_stake_pdf_v1.py processor.
 """
 
-from app.layout_engine.models import (
+from ..models import (
     TemplateJSON, BedDefinition, BedMargin,
     PartDefinition, TilingDefinition,
     TextElement, ImageElement, GraphicElement
