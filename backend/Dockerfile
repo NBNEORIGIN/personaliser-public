@@ -31,5 +31,5 @@ COPY fonts /app/../fonts
 COPY assets /app/../assets
 
 EXPOSE 8000
-# Use exec form with sh to expand environment variables
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Use exec form with sh to expand environment variables and show errors
+CMD ["sh", "-c", "echo 'Starting uvicorn...' && python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} 2>&1"]
