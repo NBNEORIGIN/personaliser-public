@@ -342,7 +342,8 @@
                 </div>
                 
                 <div style="margin-top: 20px; text-align: right; padding-top: 15px; border-top: 2px solid #ddd;">
-                    <span style="color: #666; font-size: 12px; margin-right: 20px;">💡 Right-click elements to rename • Drag to position • Type exact values</span>
+                    <span style="color: #666; font-size: 12px; margin-right: 20px;">💡 Right-click elements to rename • Drag to position • Drag corners to resize</span>
+                    <button class="btn btn-secondary" onclick="previewTemplate()" style="padding: 12px 30px; font-size: 16px; margin-right: 10px;">👁️ Preview with Sample Data</button>
                     <button class="btn" onclick="applyTemplate()" style="padding: 12px 30px; font-size: 16px;">✅ Apply Template</button>
                 </div>
             </div>
@@ -1788,13 +1789,15 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             const partWidth = parseFloat(document.getElementById('partWidth').value);
             const partHeight = parseFloat(document.getElementById('partHeight').value);
             
-            // Scale factor for display (2px per mm)
-            const scale = 2;
+            // Scale factor for display (4px per mm for better visibility)
+            const scale = 4;
             
             canvas.style.width = (partWidth * scale) + 'px';
             canvas.style.height = (partHeight * scale) + 'px';
             canvas.style.border = '2px solid #333';
             canvas.style.background = '#fff';
+            canvas.style.minWidth = '600px';
+            canvas.style.minHeight = '400px';
             
             // Clear canvas
             canvas.innerHTML = '';
@@ -1831,6 +1834,27 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                                        '🎨 ' + element.id;
                     el.appendChild(label);
                     
+                    // Add resize handles (4 corners)
+                    const handlePositions = [
+                        { pos: 'nw', cursor: 'nw-resize', top: '-4px', left: '-4px' },
+                        { pos: 'ne', cursor: 'ne-resize', top: '-4px', right: '-4px' },
+                        { pos: 'sw', cursor: 'sw-resize', bottom: '-4px', left: '-4px' },
+                        { pos: 'se', cursor: 'se-resize', bottom: '-4px', right: '-4px' }
+                    ];
+                    
+                    handlePositions.forEach(h => {
+                        const handle = document.createElement('div');
+                        handle.style.cssText = `position: absolute; width: 8px; height: 8px; background: #667eea; border: 1px solid white; cursor: ${h.cursor}; z-index: 10;`;
+                        if (h.top) handle.style.top = h.top;
+                        if (h.bottom) handle.style.bottom = h.bottom;
+                        if (h.left) handle.style.left = h.left;
+                        if (h.right) handle.style.right = h.right;
+                        handle.dataset.handle = h.pos;
+                        handle.dataset.index = index;
+                        handle.addEventListener('mousedown', startResize);
+                        el.appendChild(handle);
+                    });
+                    
                     // Make draggable
                     el.addEventListener('mousedown', startDrag);
                     el.addEventListener('click', (e) => {
@@ -1849,13 +1873,87 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             });
         }
         
+        // Resize functionality
+        let resizingElement = null;
+        let resizeHandle = null;
+        let resizeStartPos = { x: 0, y: 0 };
+        let resizeStartSize = { w: 0, h: 0, x: 0, y: 0 };
+        
+        function startResize(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const index = parseInt(e.currentTarget.dataset.index);
+            resizingElement = templateElements[index];
+            resizeHandle = e.currentTarget.dataset.handle;
+            selectedElement = index;
+            
+            resizeStartPos.x = e.clientX;
+            resizeStartPos.y = e.clientY;
+            resizeStartSize.w = resizingElement.w_mm;
+            resizeStartSize.h = resizingElement.h_mm;
+            resizeStartSize.x = resizingElement.x_mm;
+            resizeStartSize.y = resizingElement.y_mm;
+            
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+        }
+        
+        function resize(e) {
+            if (!resizingElement) return;
+            
+            const scale = 4;
+            const dx = (e.clientX - resizeStartPos.x) / scale;
+            const dy = (e.clientY - resizeStartPos.y) / scale;
+            
+            // Apply resize based on which handle is being dragged
+            if (resizeHandle === 'se') {
+                // Bottom-right: increase width and height
+                resizingElement.w_mm = Math.max(10, resizeStartSize.w + dx);
+                resizingElement.h_mm = Math.max(10, resizeStartSize.h + dy);
+            } else if (resizeHandle === 'sw') {
+                // Bottom-left: change x, width, and height
+                const newWidth = Math.max(10, resizeStartSize.w - dx);
+                resizingElement.x_mm = resizeStartSize.x + (resizeStartSize.w - newWidth);
+                resizingElement.w_mm = newWidth;
+                resizingElement.h_mm = Math.max(10, resizeStartSize.h + dy);
+            } else if (resizeHandle === 'ne') {
+                // Top-right: change y, width, and height
+                const newHeight = Math.max(10, resizeStartSize.h - dy);
+                resizingElement.y_mm = resizeStartSize.y + (resizeStartSize.h - newHeight);
+                resizingElement.w_mm = Math.max(10, resizeStartSize.w + dx);
+                resizingElement.h_mm = newHeight;
+            } else if (resizeHandle === 'nw') {
+                // Top-left: change x, y, width, and height
+                const newWidth = Math.max(10, resizeStartSize.w - dx);
+                const newHeight = Math.max(10, resizeStartSize.h - dy);
+                resizingElement.x_mm = resizeStartSize.x + (resizeStartSize.w - newWidth);
+                resizingElement.y_mm = resizeStartSize.y + (resizeStartSize.h - newHeight);
+                resizingElement.w_mm = newWidth;
+                resizingElement.h_mm = newHeight;
+            }
+            
+            renderTemplateCanvas();
+            updateElementProperties();
+        }
+        
+        function stopResize() {
+            resizingElement = null;
+            resizeHandle = null;
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResize);
+        }
+        
         function startDrag(e) {
+            // Don't start drag if clicking on a resize handle
+            if (e.target.dataset.handle) return;
+            
             e.preventDefault();
             const index = parseInt(e.currentTarget.dataset.index);
             draggedElement = templateElements[index];
             selectedElement = index;
             
-            const scale = 2;
+            const scale = 4;
             const rect = e.currentTarget.getBoundingClientRect();
             dragOffset.x = e.clientX - rect.left;
             dragOffset.y = e.clientY - rect.top;
@@ -1869,7 +1967,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             
             const canvas = document.getElementById('templateCanvas');
             const rect = canvas.getBoundingClientRect();
-            const scale = 2;
+            const scale = 4;
             
             let x = (e.clientX - rect.left - dragOffset.x) / scale;
             let y = (e.clientY - rect.top - dragOffset.y) / scale;
@@ -1974,6 +2072,79 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             selectedElement = null;
             document.getElementById('elementProperties').innerHTML = '<p style="color: #666;">Click an element to edit</p>';
             renderTemplateCanvas();
+        }
+        
+        function previewTemplate() {
+            // Generate a preview with sample data
+            const canvas = document.getElementById('templateCanvas');
+            const scale = 4;
+            
+            // Add sample text to text elements
+            templateElements.forEach((element, index) => {
+                if (element.type === 'text') {
+                    const el = canvas.children[index];
+                    if (el) {
+                        // Remove existing sample text if any
+                        const existingSample = el.querySelector('.sample-text');
+                        if (existingSample) existingSample.remove();
+                        
+                        // Add sample text
+                        const sampleText = document.createElement('div');
+                        sampleText.className = 'sample-text';
+                        sampleText.style.cssText = `
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            font-family: ${element.font_family || 'Times New Roman'};
+                            font-size: ${(element.font_size_pt || 12) * scale / 3}px;
+                            text-align: ${element.text_align || 'center'};
+                            width: 90%;
+                            pointer-events: none;
+                            color: #333;
+                        `;
+                        
+                        // Sample text based on element name
+                        const name = element.id.toLowerCase();
+                        if (name.includes('name')) {
+                            sampleText.textContent = 'John Smith';
+                        } else if (name.includes('date')) {
+                            sampleText.textContent = '1950 - 2024';
+                        } else if (name.includes('message') || name.includes('text')) {
+                            sampleText.textContent = 'Forever in our hearts';
+                        } else if (name.includes('phone')) {
+                            sampleText.textContent = '555-1234';
+                        } else {
+                            sampleText.textContent = 'Sample Text';
+                        }
+                        
+                        el.appendChild(sampleText);
+                    }
+                } else if (element.type === 'image') {
+                    const el = canvas.children[index];
+                    if (el) {
+                        // Remove existing sample image if any
+                        const existingSample = el.querySelector('.sample-image');
+                        if (existingSample) existingSample.remove();
+                        
+                        // Add sample image placeholder
+                        const sampleImage = document.createElement('div');
+                        sampleImage.className = 'sample-image';
+                        sampleImage.style.cssText = `
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            font-size: 48px;
+                            pointer-events: none;
+                        `;
+                        sampleImage.textContent = '📷';
+                        el.appendChild(sampleImage);
+                    }
+                }
+            });
+            
+            alert('👁️ Preview mode active! Sample data is now showing in the canvas.\n\nClick "Apply Template" when ready.');
         }
         
         function applyTemplate() {
