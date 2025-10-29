@@ -300,38 +300,61 @@
         </div>
         
         <!-- Template Editor Modal -->
-        <div id="templateEditorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; overflow: auto;">
-            <div style="background: white; margin: 20px auto; max-width: 1200px; border-radius: 8px; padding: 20px;">
+        <div id="templateEditorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; overflow: auto;">
+            <div style="background: white; margin: 10px; height: calc(100vh - 20px); border-radius: 8px; padding: 20px; display: flex; flex-direction: column;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0;">🎨 Visual Template Editor</h2>
-                    <button onclick="closeTemplateEditor()" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">✕ Close</button>
+                    <h2 style="margin: 0;">🎨 Visual Template Editor - Design Your Layout</h2>
+                    <div>
+                        <button onclick="clearAllElements()" style="background: #f39c12; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">🗑️ Clear All</button>
+                        <button onclick="closeTemplateEditor()" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">✕ Close</button>
+                    </div>
                 </div>
                 
-                <div style="display: grid; grid-template-columns: 250px 1fr; gap: 20px;">
+                <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; flex: 1; overflow: hidden;">
                     <!-- Toolbar -->
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 4px;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-y: auto;">
                         <h3 style="margin-top: 0;">Add Elements</h3>
-                        <button class="btn btn-secondary" onclick="addElement('text')" style="width: 100%; margin-bottom: 5px;">📝 Text Box</button>
-                        <button class="btn btn-secondary" onclick="addElement('image')" style="width: 100%; margin-bottom: 5px;">📸 Photo Area</button>
-                        <button class="btn btn-secondary" onclick="addElement('graphic')" style="width: 100%; margin-bottom: 5px;">🎨 Graphic</button>
+                        <button class="btn btn-secondary" onclick="addElement('text')" style="width: 100%; margin-bottom: 8px; padding: 10px;">
+                            📝 Text Field<br>
+                            <small style="font-size: 10px; opacity: 0.8;">For names, dates, messages</small>
+                        </button>
+                        <button class="btn btn-secondary" onclick="addElement('image')" style="width: 100%; margin-bottom: 8px; padding: 10px;">
+                            📸 Photo Area<br>
+                            <small style="font-size: 10px; opacity: 0.8;">For customer photos</small>
+                        </button>
+                        <button class="btn btn-secondary" onclick="addElement('graphic')" style="width: 100%; margin-bottom: 8px; padding: 10px;">
+                            🎨 Graphic/Border<br>
+                            <small style="font-size: 10px; opacity: 0.8;">For decorations, frames</small>
+                        </button>
                         
                         <hr style="margin: 15px 0;">
                         
                         <h3>Selected Element</h3>
                         <div id="elementProperties" style="font-size: 12px;">
-                            <p style="color: #666;">Click an element to edit</p>
+                            <p style="color: #666;">Click an element to edit properties</p>
                         </div>
                     </div>
                     
                     <!-- Canvas -->
-                    <div style="background: #fff; border: 2px solid #ddd; border-radius: 4px; position: relative; overflow: hidden;">
-                        <div id="templateCanvas" style="position: relative; margin: 20px; transform-origin: top left;"></div>
+                    <div style="background: #e8e8e8; border: 2px solid #333; border-radius: 4px; position: relative; overflow: auto; display: flex; align-items: center; justify-content: center;">
+                        <div id="templateCanvas" style="position: relative; transform-origin: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);"></div>
                     </div>
                 </div>
                 
-                <div style="margin-top: 20px; text-align: right;">
-                    <button class="btn" onclick="applyTemplate()">✅ Apply Template</button>
+                <div style="margin-top: 20px; text-align: right; padding-top: 15px; border-top: 2px solid #ddd;">
+                    <span style="color: #666; font-size: 12px; margin-right: 20px;">💡 Right-click elements to rename • Drag to position • Type exact values</span>
+                    <button class="btn" onclick="applyTemplate()" style="padding: 12px 30px; font-size: 16px;">✅ Apply Template</button>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Context Menu for Renaming -->
+        <div id="contextMenu" style="display: none; position: fixed; background: white; border: 2px solid #333; border-radius: 4px; padding: 5px; z-index: 10001; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+            <div onclick="renameElement()" style="padding: 8px 15px; cursor: pointer; border-radius: 2px;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
+                ✏️ Rename Element
+            </div>
+            <div onclick="deleteElementFromContext()" style="padding: 8px 15px; cursor: pointer; border-radius: 2px; color: #e74c3c;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
+                🗑️ Delete Element
             </div>
         </div>
         
@@ -1399,16 +1422,10 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                     const mappingDiv = document.getElementById('mappingFields');
                     mappingDiv.innerHTML = '';
                     
-                    // Friendly names for element IDs
-                    const friendlyNames = {
-                        'nameLine': 'Name',
-                        'messageBlock': 'Message/Description',
-                        'additionalText': 'Date/Additional Info',
-                        'photoArea': 'Photo/Image',
-                        'borderFrame': 'Border/Graphic'
-                    };
-                    
                     elements.forEach((element, idx) => {
+                        // Skip border frame
+                        if (element.id === 'borderFrame') return;
+                        
                         const label = document.createElement('label');
                         label.style.display = 'block';
                         label.style.margin = '4px 0';
@@ -1417,8 +1434,10 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                         span.style.display = 'inline-block';
                         span.style.width = '150px';
                         span.style.fontWeight = '500';
-                        const displayName = friendlyNames[element.id] || element.id;
-                        span.textContent = `${displayName}:`;
+                        // Use element's actual name (user can rename in editor)
+                        const displayName = element.id;
+                        const icon = element.type === 'text' ? '📝' : element.type === 'image' ? '📸' : '🎨';
+                        span.textContent = `${icon} ${displayName}:`;
                         
                         const select = document.createElement('select');
                         select.id = `map_${element.id}`;
@@ -1432,32 +1451,22 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                             select.appendChild(option);
                         });
                         
-                        // Improved auto-select logic
+                        // Improved auto-select logic - match element name to CSV column
                         let matchedHeader = null;
                         
-                        // First, try exact friendly name match
-                        const friendlyName = friendlyNames[element.id];
-                        if (friendlyName) {
-                            matchedHeader = headers.find(h => {
-                                const hLower = h.toLowerCase();
-                                const fLower = friendlyName.toLowerCase();
-                                return hLower === fLower || hLower.includes(fLower.split('/')[0].trim().toLowerCase());
-                            });
-                        }
+                        // Try to match element ID to column header
+                        const elementIdLower = element.id.toLowerCase();
+                        matchedHeader = headers.find(h => {
+                            const hLower = h.toLowerCase();
+                            // Exact match or contains
+                            return hLower === elementIdLower || 
+                                   hLower.includes(elementIdLower) || 
+                                   elementIdLower.includes(hLower);
+                        });
                         
-                        // Then try element ID match
-                        if (!matchedHeader) {
-                            const elementIdLower = element.id.toLowerCase();
-                            matchedHeader = headers.find(h => {
-                                const hLower = h.toLowerCase();
-                                return hLower.includes(elementIdLower) || elementIdLower.includes(hLower);
-                            });
-                        }
-                        
-                        // Smart positional mapping for common patterns
-                        if (!matchedHeader) {
-                            if (element.id === 'nameLine' && idx === 0 && headers.length > 0) {
-                                matchedHeader = headers[0]; // First column usually name
+                        // If no match, try first available column for first element
+                        if (!matchedHeader && idx === 0 && headers.length > 0) {
+                            matchedHeader = headers[0];
                             } else if (element.id === 'additionalText' && headers.length > 2) {
                                 matchedHeader = headers[1]; // Second column often date
                             } else if (element.id === 'messageBlock' && headers.length > 2) {
@@ -1722,10 +1731,56 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
         function openTemplateEditor() {
             document.getElementById('templateEditorModal').style.display = 'block';
             
-            // Load current template elements
-            const template = buildTemplate();
-            templateElements = JSON.parse(JSON.stringify(template.part.elements)); // Deep copy
+            // Start with blank canvas or load existing custom template
+            if (currentTemplateType === 'custom' && templateElements.length > 0) {
+                // Keep existing custom template
+            } else {
+                // Start fresh with just the border frame
+                const partWidth = parseFloat(document.getElementById('partWidth').value);
+                const partHeight = parseFloat(document.getElementById('partHeight').value);
+                
+                templateElements = [
+                    {
+                        type: "graphic",
+                        id: "borderFrame",
+                        x_mm: 0,
+                        y_mm: 0,
+                        w_mm: partWidth,
+                        h_mm: partHeight,
+                        source: "",
+                        stroke_color: "rgb(255,0,0)",
+                        stroke_width: 0.1,
+                        editable: false
+                    }
+                ];
+            }
             
+            renderTemplateCanvas();
+        }
+        
+        function clearAllElements() {
+            if (!confirm('Clear all elements and start fresh?')) return;
+            
+            const partWidth = parseFloat(document.getElementById('partWidth').value);
+            const partHeight = parseFloat(document.getElementById('partHeight').value);
+            
+            templateElements = [
+                {
+                    type: "graphic",
+                    id: "borderFrame",
+                    x_mm: 0,
+                    y_mm: 0,
+                    w_mm: partWidth,
+                    h_mm: partHeight,
+                    source: "",
+                    stroke_color: "rgb(255,0,0)",
+                    stroke_width: 0.1,
+                    editable: false
+                }
+            ];
+            
+            selectedElement = null;
+            document.getElementById('elementProperties').innerHTML = '<p style="color: #666;">Click an element to edit properties</p>';
             renderTemplateCanvas();
         }
         
@@ -1757,27 +1812,43 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 el.style.top = (element.y_mm * scale) + 'px';
                 el.style.width = (element.w_mm * scale) + 'px';
                 el.style.height = (element.h_mm * scale) + 'px';
-                el.style.border = '2px dashed #667eea';
-                el.style.cursor = 'move';
-                el.style.background = element.type === 'text' ? 'rgba(102, 126, 234, 0.1)' : 
-                                     element.type === 'image' ? 'rgba(52, 152, 219, 0.1)' : 
-                                     'rgba(46, 204, 113, 0.1)';
+                // Style based on element type
+                if (element.id === 'borderFrame') {
+                    el.style.border = '1px solid rgb(255,0,0)';
+                    el.style.cursor = 'default';
+                    el.style.background = 'transparent';
+                    el.style.pointerEvents = 'none'; // Can't drag border
+                } else {
+                    el.style.border = '2px dashed #667eea';
+                    el.style.cursor = 'move';
+                    el.style.background = element.type === 'text' ? 'rgba(102, 126, 234, 0.1)' : 
+                                         element.type === 'image' ? 'rgba(52, 152, 219, 0.1)' : 
+                                         'rgba(46, 204, 113, 0.1)';
+                }
                 el.dataset.index = index;
                 
                 // Label
-                const label = document.createElement('div');
-                label.style.cssText = 'position: absolute; top: 2px; left: 2px; background: rgba(0,0,0,0.7); color: white; padding: 2px 5px; font-size: 10px; border-radius: 2px;';
-                label.textContent = element.type === 'text' ? '📝 ' + element.id : 
-                                   element.type === 'image' ? '📸 ' + element.id : 
-                                   '🎨 ' + element.id;
-                el.appendChild(label);
-                
-                // Make draggable
-                el.addEventListener('mousedown', startDrag);
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectElement(index);
-                });
+                if (element.id !== 'borderFrame') {
+                    const label = document.createElement('div');
+                    label.style.cssText = 'position: absolute; top: 2px; left: 2px; background: rgba(0,0,0,0.7); color: white; padding: 2px 5px; font-size: 10px; border-radius: 2px; pointer-events: none;';
+                    label.textContent = element.type === 'text' ? '📝 ' + element.id : 
+                                       element.type === 'image' ? '📸 ' + element.id : 
+                                       '🎨 ' + element.id;
+                    el.appendChild(label);
+                    
+                    // Make draggable
+                    el.addEventListener('mousedown', startDrag);
+                    el.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        selectElement(index);
+                    });
+                    
+                    // Right-click context menu
+                    el.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        showContextMenu(e, index);
+                    });
+                }
                 
                 canvas.appendChild(el);
             });
@@ -1923,6 +1994,49 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 renderTemplateCanvas();
             }
         }
+        
+        // Context menu functions
+        let contextMenuElementIndex = null;
+        
+        function showContextMenu(e, index) {
+            contextMenuElementIndex = index;
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+        }
+        
+        function renameElement() {
+            if (contextMenuElementIndex === null) return;
+            
+            const element = templateElements[contextMenuElementIndex];
+            const newName = prompt('Enter new name for this element:', element.id);
+            
+            if (newName && newName.trim()) {
+                element.id = newName.trim();
+                renderTemplateCanvas();
+                if (selectedElement === contextMenuElementIndex) {
+                    updateElementProperties();
+                }
+            }
+            
+            hideContextMenu();
+        }
+        
+        function deleteElementFromContext() {
+            if (contextMenuElementIndex === null) return;
+            selectedElement = contextMenuElementIndex;
+            deleteElement();
+            hideContextMenu();
+        }
+        
+        function hideContextMenu() {
+            document.getElementById('contextMenu').style.display = 'none';
+            contextMenuElementIndex = null;
+        }
+        
+        // Hide context menu on click anywhere
+        document.addEventListener('click', hideContextMenu);
         
         async function generateSVG() {
             const status = document.getElementById('status');
