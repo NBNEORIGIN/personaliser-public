@@ -6,7 +6,7 @@ Generates editable SVG output with live text, images, and graphics.
 
 from typing import Optional
 from .models import (
-    TemplateJSON, ContentJSON, SlotContent,
+    TemplateJSON, ContentJSON, SlotContent, PhotoContent,
     TextElement, ImageElement, GraphicElement, Element
 )
 from .utils import (
@@ -91,22 +91,41 @@ def render_text_element(
 
 def render_image_element(
     element: ImageElement,
-    image_path: Optional[str],
+    content: Optional[str | PhotoContent | dict],
     row: int,
     col: int
 ) -> str:
     """
-    Render an image element as SVG <image> with optional clipping.
+    Render an image element as SVG <image> with optional clipping, transforms, and frame overlay.
     
     Args:
         element: Image element definition
-        image_path: Path/URL to image file
+        content: Image path string, PhotoContent object, or dict with photo data
         row: Row index for ID generation
         col: Column index for ID generation
         
     Returns:
         SVG markup string
     """
+    # Parse content to extract image path and transform
+    image_path = None
+    scale = 1.0
+    offset_x_mm = 0.0
+    offset_y_mm = 0.0
+    
+    if isinstance(content, PhotoContent):
+        image_path = content.file_url
+        scale = content.scale
+        offset_x_mm = content.offset_x_mm
+        offset_y_mm = content.offset_y_mm
+    elif isinstance(content, dict):
+        image_path = content.get('file_url') or content.get('photo_url')
+        scale = content.get('scale', 1.0)
+        offset_x_mm = content.get('offset_x_mm', 0.0)
+        offset_y_mm = content.get('offset_y_mm', 0.0)
+    elif isinstance(content, str):
+        image_path = content
+    
     if not image_path:
         # Render placeholder rectangle
         element_id = generate_unique_id("image-placeholder", row, col, element.id)
@@ -119,6 +138,10 @@ def render_image_element(
     
     svg_parts = []
     element_id = generate_unique_id("image", row, col, element.id)
+    group_id = generate_unique_id("image-group", row, col, element.id)
+    
+    # Start group for image + frame
+    svg_parts.append(f'<g id="{group_id}">')
     
     # Handle clipping if defined
     clip_path_id = None
@@ -137,8 +160,22 @@ def render_image_element(
         
         svg_parts.append('</clipPath>')
     
+    # Build transform string if scale or offset is applied
+    transform_parts = []
+    if scale != 1.0 or offset_x_mm != 0 or offset_y_mm != 0:
+        # Calculate center point for scaling
+        center_x = element.x_mm + element.w_mm / 2
+        center_y = element.y_mm + element.h_mm / 2
+        
+        # Apply transforms: translate to center, scale, translate back, then apply offset
+        if offset_x_mm != 0 or offset_y_mm != 0:
+            transform_parts.append(f'translate({offset_x_mm}, {offset_y_mm})')
+        if scale != 1.0:
+            transform_parts.append(f'translate({center_x}, {center_y}) scale({scale}) translate({-center_x}, {-center_y})')
+    
+    transform_attr = f' transform="{" ".join(transform_parts)}"' if transform_parts else ''
+    
     # Render image
-    # TODO: Handle fit modes (cover vs contain) - for now just stretch to fit
     image_attrs = [
         f'id="{element_id}"',
         f'x="{element.x_mm}"',
@@ -152,7 +189,22 @@ def render_image_element(
     if clip_path_id:
         image_attrs.append(f'clip-path="url(#{clip_path_id})"')
     
-    svg_parts.append(f'<image {" ".join(image_attrs)} />')
+    svg_parts.append(f'<image {" ".join(image_attrs)}{transform_attr} />')
+    
+    # Render frame overlay if specified
+    if element.frame_source:
+        frame_id = generate_unique_id("frame", row, col, element.id)
+        # For now, assume frame_source is an SVG path or reference
+        # In production, this would load and scale the frame SVG
+        svg_parts.append(
+            f'<!-- Frame overlay: {escape_xml(element.frame_source)} -->'
+            f'<rect id="{frame_id}" '
+            f'x="{element.x_mm}" y="{element.y_mm}" '
+            f'width="{element.w_mm}" height="{element.h_mm}" '
+            f'fill="none" stroke="gold" stroke-width="2" />'
+        )
+    
+    svg_parts.append('</g>')
     
     return '\n'.join(svg_parts)
 

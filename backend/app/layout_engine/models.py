@@ -45,6 +45,7 @@ class ImageElement(BaseElement):
     type: Literal["image"] = "image"
     fit: Literal["cover", "contain"] = Field(default="cover", description="How image fits in box")
     clip_shape: Optional[ClipShape] = Field(default=None, description="Optional clipping shape")
+    frame_source: Optional[str] = Field(default=None, description="Optional frame/border SVG to overlay on top")
 
 
 class GraphicElement(BaseElement):
@@ -105,6 +106,15 @@ class TemplateJSON(BaseModel):
 # CONTENT PAYLOAD
 # ============================================================================
 
+class PhotoContent(BaseModel):
+    """Photo content with transform parameters."""
+    photo_id: Optional[str] = Field(default=None, description="Photo identifier")
+    file_url: str = Field(description="URL or path to photo file")
+    scale: float = Field(default=1.0, ge=0.1, le=5.0, description="Scale factor (1.0 = 100%)")
+    offset_x_mm: float = Field(default=0, description="Horizontal offset in mm")
+    offset_y_mm: float = Field(default=0, description="Vertical offset in mm")
+
+
 class SlotContent(BaseModel):
     """Content for a single slot/tile on the bed."""
     slot_index: int = Field(ge=0, description="Slot position (row-major order)")
@@ -113,7 +123,7 @@ class SlotContent(BaseModel):
     # Using model_extra to allow arbitrary fields
     model_config = {"extra": "allow"}
     
-    def get_content(self, element_id: str) -> Optional[str]:
+    def get_content(self, element_id: str) -> Optional[str | PhotoContent | Dict[str, Any]]:
         """Get content for a specific element ID."""
         return getattr(self, element_id, None)
 
