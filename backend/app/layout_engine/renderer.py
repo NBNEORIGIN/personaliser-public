@@ -194,15 +194,38 @@ def render_image_element(
     # Render frame overlay if specified
     if element.frame_source:
         frame_id = generate_unique_id("frame", row, col, element.id)
-        # For now, assume frame_source is an SVG path or reference
-        # In production, this would load and scale the frame SVG
-        svg_parts.append(
-            f'<!-- Frame overlay: {escape_xml(element.frame_source)} -->'
-            f'<rect id="{frame_id}" '
-            f'x="{element.x_mm}" y="{element.y_mm}" '
-            f'width="{element.w_mm}" height="{element.h_mm}" '
-            f'fill="none" stroke="gold" stroke-width="2" />'
-        )
+        try:
+            # Load frame SVG file
+            from pathlib import Path
+            frame_path = Path(element.frame_source.lstrip('/'))
+            if frame_path.exists():
+                frame_svg = frame_path.read_text()
+                # Embed frame as nested SVG with proper positioning and sizing
+                svg_parts.append(
+                    f'<svg id="{frame_id}" '
+                    f'x="{element.x_mm}" y="{element.y_mm}" '
+                    f'width="{element.w_mm}" height="{element.h_mm}" '
+                    f'viewBox="0 0 100 100" preserveAspectRatio="none">'
+                    f'{frame_svg}'
+                    f'</svg>'
+                )
+            else:
+                # Fallback to simple border
+                svg_parts.append(
+                    f'<rect id="{frame_id}" '
+                    f'x="{element.x_mm}" y="{element.y_mm}" '
+                    f'width="{element.w_mm}" height="{element.h_mm}" '
+                    f'fill="none" stroke="gold" stroke-width="2" rx="2" />'
+                )
+        except Exception as e:
+            # Fallback on error
+            svg_parts.append(
+                f'<!-- Frame load error: {str(e)} -->'
+                f'<rect id="{frame_id}" '
+                f'x="{element.x_mm}" y="{element.y_mm}" '
+                f'width="{element.w_mm}" height="{element.h_mm}" '
+                f'fill="none" stroke="gold" stroke-width="2" rx="2" />'
+            )
     
     svg_parts.append('</g>')
     
