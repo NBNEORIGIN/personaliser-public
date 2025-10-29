@@ -299,6 +299,42 @@
             <button onclick="addNewBed()" style="padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 20px;">+</button>
         </div>
         
+        <!-- Template Editor Modal -->
+        <div id="templateEditorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; overflow: auto;">
+            <div style="background: white; margin: 20px auto; max-width: 1200px; border-radius: 8px; padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">🎨 Visual Template Editor</h2>
+                    <button onclick="closeTemplateEditor()" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">✕ Close</button>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 250px 1fr; gap: 20px;">
+                    <!-- Toolbar -->
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 4px;">
+                        <h3 style="margin-top: 0;">Add Elements</h3>
+                        <button class="btn btn-secondary" onclick="addElement('text')" style="width: 100%; margin-bottom: 5px;">📝 Text Box</button>
+                        <button class="btn btn-secondary" onclick="addElement('image')" style="width: 100%; margin-bottom: 5px;">📸 Photo Area</button>
+                        <button class="btn btn-secondary" onclick="addElement('graphic')" style="width: 100%; margin-bottom: 5px;">🎨 Graphic</button>
+                        
+                        <hr style="margin: 15px 0;">
+                        
+                        <h3>Selected Element</h3>
+                        <div id="elementProperties" style="font-size: 12px;">
+                            <p style="color: #666;">Click an element to edit</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Canvas -->
+                    <div style="background: #fff; border: 2px solid #ddd; border-radius: 4px; position: relative; overflow: hidden;">
+                        <div id="templateCanvas" style="position: relative; margin: 20px; transform-origin: top left;"></div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn" onclick="applyTemplate()">✅ Apply Template</button>
+                </div>
+            </div>
+        </div>
+        
         <div class="content">
             <div class="sidebar">
                 <div class="info-box">
@@ -437,13 +473,16 @@
                     <div class="grid-inputs">
                         <div class="input-group">
                             <label>Width (mm)</label>
-                            <input type="number" id="partWidth" value="140">
+                            <input type="number" id="partWidth" value="140" onchange="updateTemplateEditor()">
                         </div>
                         <div class="input-group">
                             <label>Height (mm)</label>
-                            <input type="number" id="partHeight" value="90">
+                            <input type="number" id="partHeight" value="90" onchange="updateTemplateEditor()">
                         </div>
                     </div>
+                    <button class="btn btn-secondary" onclick="openTemplateEditor()" style="margin-top: 10px;">
+                        🎨 Visual Template Editor
+                    </button>
                 </div>
                 
                 <div class="section">
@@ -723,7 +762,10 @@
             // Build elements based on template type
             let elements = [];
             
-            if (currentTemplateType.startsWith('photo_')) {
+            // If custom template from editor, use those elements
+            if (currentTemplateType === 'custom' && templateElements.length > 0) {
+                elements = JSON.parse(JSON.stringify(templateElements)); // Deep copy
+            } else if (currentTemplateType.startsWith('photo_')) {
                 // PHOTO MEMORIAL LAYOUT: Photo left, text right
                 const photoSize = Math.min(partWidth * 0.4, partHeight * 0.8);
                 const textStartX = photoSize + 10;
@@ -1668,6 +1710,217 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 
             } catch (error) {
                 status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Template Editor Variables
+        let templateElements = [];
+        let selectedElement = null;
+        let draggedElement = null;
+        let dragOffset = { x: 0, y: 0 };
+        
+        function openTemplateEditor() {
+            document.getElementById('templateEditorModal').style.display = 'block';
+            
+            // Load current template elements
+            const template = buildTemplate();
+            templateElements = JSON.parse(JSON.stringify(template.part.elements)); // Deep copy
+            
+            renderTemplateCanvas();
+        }
+        
+        function closeTemplateEditor() {
+            document.getElementById('templateEditorModal').style.display = 'none';
+        }
+        
+        function renderTemplateCanvas() {
+            const canvas = document.getElementById('templateCanvas');
+            const partWidth = parseFloat(document.getElementById('partWidth').value);
+            const partHeight = parseFloat(document.getElementById('partHeight').value);
+            
+            // Scale factor for display (2px per mm)
+            const scale = 2;
+            
+            canvas.style.width = (partWidth * scale) + 'px';
+            canvas.style.height = (partHeight * scale) + 'px';
+            canvas.style.border = '2px solid #333';
+            canvas.style.background = '#fff';
+            
+            // Clear canvas
+            canvas.innerHTML = '';
+            
+            // Render each element
+            templateElements.forEach((element, index) => {
+                const el = document.createElement('div');
+                el.style.position = 'absolute';
+                el.style.left = (element.x_mm * scale) + 'px';
+                el.style.top = (element.y_mm * scale) + 'px';
+                el.style.width = (element.w_mm * scale) + 'px';
+                el.style.height = (element.h_mm * scale) + 'px';
+                el.style.border = '2px dashed #667eea';
+                el.style.cursor = 'move';
+                el.style.background = element.type === 'text' ? 'rgba(102, 126, 234, 0.1)' : 
+                                     element.type === 'image' ? 'rgba(52, 152, 219, 0.1)' : 
+                                     'rgba(46, 204, 113, 0.1)';
+                el.dataset.index = index;
+                
+                // Label
+                const label = document.createElement('div');
+                label.style.cssText = 'position: absolute; top: 2px; left: 2px; background: rgba(0,0,0,0.7); color: white; padding: 2px 5px; font-size: 10px; border-radius: 2px;';
+                label.textContent = element.type === 'text' ? '📝 ' + element.id : 
+                                   element.type === 'image' ? '📸 ' + element.id : 
+                                   '🎨 ' + element.id;
+                el.appendChild(label);
+                
+                // Make draggable
+                el.addEventListener('mousedown', startDrag);
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectElement(index);
+                });
+                
+                canvas.appendChild(el);
+            });
+        }
+        
+        function startDrag(e) {
+            e.preventDefault();
+            const index = parseInt(e.currentTarget.dataset.index);
+            draggedElement = templateElements[index];
+            selectedElement = index;
+            
+            const scale = 2;
+            const rect = e.currentTarget.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+        
+        function drag(e) {
+            if (!draggedElement) return;
+            
+            const canvas = document.getElementById('templateCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const scale = 2;
+            
+            let x = (e.clientX - rect.left - dragOffset.x) / scale;
+            let y = (e.clientY - rect.top - dragOffset.y) / scale;
+            
+            // Constrain to canvas
+            x = Math.max(0, Math.min(x, parseFloat(document.getElementById('partWidth').value) - draggedElement.w_mm));
+            y = Math.max(0, Math.min(y, parseFloat(document.getElementById('partHeight').value) - draggedElement.h_mm));
+            
+            draggedElement.x_mm = Math.round(x);
+            draggedElement.y_mm = Math.round(y);
+            
+            renderTemplateCanvas();
+            updateElementProperties();
+        }
+        
+        function stopDrag() {
+            draggedElement = null;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+        
+        function selectElement(index) {
+            selectedElement = index;
+            updateElementProperties();
+        }
+        
+        function updateElementProperties() {
+            if (selectedElement === null) return;
+            
+            const element = templateElements[selectedElement];
+            const props = document.getElementById('elementProperties');
+            
+            props.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <strong>${element.type.toUpperCase()}: ${element.id}</strong>
+                </div>
+                <div style="margin-bottom: 5px;">
+                    <label style="display: block; font-size: 11px; margin-bottom: 2px;">X Position (mm)</label>
+                    <input type="number" value="${element.x_mm}" onchange="updateElementProperty('x_mm', this.value)" style="width: 100%; padding: 4px;">
+                </div>
+                <div style="margin-bottom: 5px;">
+                    <label style="display: block; font-size: 11px; margin-bottom: 2px;">Y Position (mm)</label>
+                    <input type="number" value="${element.y_mm}" onchange="updateElementProperty('y_mm', this.value)" style="width: 100%; padding: 4px;">
+                </div>
+                <div style="margin-bottom: 5px;">
+                    <label style="display: block; font-size: 11px; margin-bottom: 2px;">Width (mm)</label>
+                    <input type="number" value="${element.w_mm}" onchange="updateElementProperty('w_mm', this.value)" style="width: 100%; padding: 4px;">
+                </div>
+                <div style="margin-bottom: 5px;">
+                    <label style="display: block; font-size: 11px; margin-bottom: 2px;">Height (mm)</label>
+                    <input type="number" value="${element.h_mm}" onchange="updateElementProperty('h_mm', this.value)" style="width: 100%; padding: 4px;">
+                </div>
+                ${element.type === 'text' ? `
+                    <div style="margin-bottom: 5px;">
+                        <label style="display: block; font-size: 11px; margin-bottom: 2px;">Font Size (pt)</label>
+                        <input type="number" value="${element.font_size_pt}" onchange="updateElementProperty('font_size_pt', this.value)" style="width: 100%; padding: 4px;">
+                    </div>
+                ` : ''}
+                <button onclick="deleteElement()" style="width: 100%; margin-top: 10px; background: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer;">🗑️ Delete Element</button>
+            `;
+        }
+        
+        function updateElementProperty(prop, value) {
+            if (selectedElement === null) return;
+            templateElements[selectedElement][prop] = parseFloat(value);
+            renderTemplateCanvas();
+        }
+        
+        function addElement(type) {
+            const partWidth = parseFloat(document.getElementById('partWidth').value);
+            const partHeight = parseFloat(document.getElementById('partHeight').value);
+            
+            const newElement = {
+                type: type,
+                id: type + 'Element' + templateElements.length,
+                x_mm: 10,
+                y_mm: 10,
+                w_mm: type === 'image' ? 40 : 80,
+                h_mm: type === 'image' ? 40 : 20,
+                editable: true
+            };
+            
+            if (type === 'text') {
+                newElement.font_family = 'Times New Roman';
+                newElement.font_size_pt = 12;
+                newElement.text_align = 'center';
+                newElement.multiline = false;
+            } else if (type === 'image') {
+                newElement.fit = 'cover';
+                newElement.clip_shape = { kind: 'rounded_rect', radius_mm: 4 };
+            } else if (type === 'graphic') {
+                newElement.source = '';
+            }
+            
+            templateElements.push(newElement);
+            renderTemplateCanvas();
+        }
+        
+        function deleteElement() {
+            if (selectedElement === null) return;
+            templateElements.splice(selectedElement, 1);
+            selectedElement = null;
+            document.getElementById('elementProperties').innerHTML = '<p style="color: #666;">Click an element to edit</p>';
+            renderTemplateCanvas();
+        }
+        
+        function applyTemplate() {
+            // Update the current template type to use custom elements
+            currentTemplateType = 'custom';
+            closeTemplateEditor();
+            alert('✅ Template applied! Click "Generate SVG" to see the result.');
+        }
+        
+        function updateTemplateEditor() {
+            // Update canvas size when part dimensions change
+            if (document.getElementById('templateEditorModal').style.display === 'block') {
+                renderTemplateCanvas();
             }
         }
         
