@@ -284,6 +284,49 @@ async def upload_graphic(file: UploadFile = File(...)):
         )
 
 
+@router.post("/upload/photo")
+async def upload_photo(file: UploadFile = File(...)):
+    """
+    Upload a photo for use in photo products.
+    
+    **Parameters:**
+    - `file`: Photo file (JPG, PNG)
+    
+    **Returns:**
+    - File URL and metadata
+    """
+    try:
+        from pathlib import Path
+        import uuid
+        
+        # Create photos directory if it doesn't exist
+        photos_dir = Path("static/photos")
+        photos_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate unique filename
+        file_ext = Path(file.filename).suffix
+        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        file_path = photos_dir / unique_filename
+        
+        # Save file
+        content = await file.read()
+        file_path.write_bytes(content)
+        
+        return {
+            "success": True,
+            "photo_id": str(uuid.uuid4()),
+            "filename": file.filename,
+            "file_url": f"/static/photos/{unique_filename}",
+            "message": "Photo uploaded successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to upload photo: {str(e)}"
+        )
+
+
 @router.get("/graphics")
 async def list_graphics():
     """

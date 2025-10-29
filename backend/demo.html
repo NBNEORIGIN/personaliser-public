@@ -360,6 +360,14 @@
                 </div>
                 
                 <div class="section">
+                    <h3>Photo Upload <span style="font-size: 12px; font-weight: normal; color: #666;">ℹ️ For photo products</span></h3>
+                    <input type="file" id="photoFile" accept=".jpg,.jpeg,.png" style="margin-bottom: 10px;">
+                    <button class="btn btn-secondary" onclick="uploadPhoto()">📸 Upload Photo</button>
+                    <div id="photoStatus" style="margin-top: 10px; font-size: 12px;"></div>
+                    <div id="photosList" style="margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 12px;"></div>
+                </div>
+                
+                <div class="section">
                     <h3>CSV Upload</h3>
                     <div style="margin-bottom: 10px; padding: 8px; background: #e8f4f8; border-radius: 4px; font-size: 12px;">
                         <strong>💡 Need a sample?</strong><br>
@@ -969,6 +977,53 @@
             navigator.clipboard.writeText(text).then(() => {
                 alert(`✅ Copied to clipboard: ${text}`);
             });
+        }
+        
+        async function uploadPhoto() {
+            const fileInput = document.getElementById('photoFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a photo file');
+                return;
+            }
+            
+            const status = document.getElementById('photoStatus');
+            status.innerHTML = '⏳ Uploading photo...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch(`${API_BASE}/upload/photo`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                status.innerHTML = `<span style="color: green;">✅ Photo uploaded: ${file.name}</span>`;
+                
+                // Add to photos list
+                const photosList = document.getElementById('photosList');
+                const photoItem = document.createElement('div');
+                photoItem.style.padding = '5px';
+                photoItem.style.borderBottom = '1px solid #ddd';
+                photoItem.innerHTML = `
+                    <strong>${file.name}</strong><br>
+                    <small style="color: #666;">URL: ${data.file_url}</small>
+                `;
+                photosList.appendChild(photoItem);
+                
+                // Clear input
+                fileInput.value = '';
+                
+            } catch (error) {
+                status.innerHTML = `<span style="color: red;">❌ Error: ${error.message}</span>`;
+            }
         }
         
         // Load graphics on page load
