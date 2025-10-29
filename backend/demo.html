@@ -383,10 +383,10 @@
                 </div>
                 
                 <div class="section">
-                    <h3>Quick Start Templates <span style="font-size: 12px; font-weight: normal; color: #666;">ℹ️ For council reviewers</span></h3>
+                    <h3>Quick Start Templates</h3>
                     <div style="margin-bottom: 10px; padding: 10px; background: #fff3cd; border-radius: 4px; font-size: 12px;">
                         <strong>💡 Choose your product type:</strong><br>
-                        <span style="color: #666;">Templates are pre-configured for your actual products</span>
+                        <span style="color: #666;">Templates are pre-configured for common products</span>
                     </div>
                     <div style="margin-bottom: 10px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 500;">Product Type:</label>
@@ -1467,11 +1467,6 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                         // If no match, try first available column for first element
                         if (!matchedHeader && idx === 0 && headers.length > 0) {
                             matchedHeader = headers[0];
-                            } else if (element.id === 'additionalText' && headers.length > 2) {
-                                matchedHeader = headers[1]; // Second column often date
-                            } else if (element.id === 'messageBlock' && headers.length > 2) {
-                                matchedHeader = headers[2]; // Third column often message
-                            }
                         }
                         
                         if (matchedHeader) {
