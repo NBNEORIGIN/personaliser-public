@@ -4,6 +4,8 @@ SVG renderer for template-driven layout engine.
 Generates editable SVG output with live text, images, and graphics.
 """
 
+import re
+from pathlib import Path
 from typing import Optional
 from .models import (
     TemplateJSON, ContentJSON, SlotContent, PhotoContent,
@@ -196,7 +198,6 @@ def render_image_element(
         frame_id = generate_unique_id("frame", row, col, element.id)
         try:
             # Load frame SVG file
-            from pathlib import Path
             frame_path = Path(element.frame_source.lstrip('/'))
             if frame_path.exists():
                 frame_svg = frame_path.read_text()
@@ -238,7 +239,7 @@ def render_graphic_element(
     col: int
 ) -> str:
     """
-    Render a static graphic element.
+    Render a static graphic element by loading and inlining SVG.
     
     Args:
         element: Graphic element definition
@@ -248,17 +249,65 @@ def render_graphic_element(
     Returns:
         SVG markup string
     """
-    # TODO: Load and inline SVG from element.source
-    # For now, render a placeholder
     element_id = generate_unique_id("graphic", row, col, element.id)
     
-    return (
-        f'<!-- Graphic: {escape_xml(element.source)} -->\n'
-        f'<rect id="{element_id}" '
-        f'x="{element.x_mm}" y="{element.y_mm}" '
-        f'width="{element.w_mm}" height="{element.h_mm}" '
-        f'fill="none" stroke="#000000" stroke-width="0.5" />'
-    )
+    # Try to load SVG from source
+    svg_content = None
+    try:
+        # Handle different source formats
+        if element.source.startswith('<svg'):
+            # Inline SVG markup
+            svg_content = element.source
+        elif element.source.startswith('http://') or element.source.startswith('https://'):
+            # URL - would need requests library, skip for now
+            svg_content = None
+        else:
+            # File path
+            source_path = Path(element.source)
+            if not source_path.is_absolute():
+                # Try relative to assets directory
+                from ..settings import settings
+                assets_dir = Path(settings.ASSETS_DIR) if hasattr(settings, 'ASSETS_DIR') else Path('assets')
+                source_path = assets_dir / element.source
+            
+            if source_path.exists():
+                svg_content = source_path.read_text(encoding='utf-8')
+    except Exception as e:
+        # Log error but continue with placeholder
+        svg_content = None
+    
+    if svg_content:
+        # Extract viewBox from source SVG if present
+        viewbox_match = re.search(r'viewBox="([^"]+)"', svg_content)
+        viewbox = viewbox_match.group(1) if viewbox_match else "0 0 100 100"
+        
+        # Strip outer <svg> tags if present and extract inner content
+        inner_content = svg_content
+        if '<svg' in svg_content:
+            # Extract content between <svg...> and </svg>
+            svg_start = svg_content.find('>')
+            svg_end = svg_content.rfind('</svg>')
+            if svg_start != -1 and svg_end != -1:
+                inner_content = svg_content[svg_start + 1:svg_end].strip()
+        
+        # Wrap in positioned SVG with proper scaling
+        return (
+            f'<svg id="{element_id}" '
+            f'x="{element.x_mm}" y="{element.y_mm}" '
+            f'width="{element.w_mm}" height="{element.h_mm}" '
+            f'viewBox="{viewbox}" preserveAspectRatio="xMidYMid meet">'
+            f'{inner_content}'
+            f'</svg>'
+        )
+    else:
+        # Fallback to placeholder rectangle
+        return (
+            f'<!-- Graphic not found: {escape_xml(element.source)} -->\n'
+            f'<rect id="{element_id}" '
+            f'x="{element.x_mm}" y="{element.y_mm}" '
+            f'width="{element.w_mm}" height="{element.h_mm}" '
+            f'fill="none" stroke="#000000" stroke-width="0.5" />'
+        )
 
 
 def calculate_element_position(element: Element, elements: list) -> tuple[float, float]:
@@ -433,13 +482,7 @@ def renderPlateSVG(template: TemplateJSON, content: ContentJSON) -> str:
 
 def exportPDF(svg_string: str, output_path: str = "output.pdf") -> str:
     """
-    Export SVG to PDF format.
-    
-    TODO: Implement actual SVG to PDF conversion using:
-    - cairosvg (Python library)
-    - Inkscape CLI (inkscape --export-pdf)
-    - rsvg-convert (librsvg)
-    - WeasyPrint
+    Export SVG to PDF format using cairosvg.
     
     Args:
         svg_string: SVG markup to convert
@@ -447,9 +490,10 @@ def exportPDF(svg_string: str, output_path: str = "output.pdf") -> str:
         
     Returns:
         Path to generated PDF file
+        
+    Raises:
+        ImportError: If cairosvg is not installed
+        Exception: If conversion fails
     """
-    # Stub implementation
-    raise NotImplementedError(
-        "PDF export not yet implemented. "
-        "Consider using cairosvg, Inkscape CLI, or rsvg-convert for SVG→PDF conversion."
-    )
+    from .pdf_export import export_svg_to_pdf_file
+    return export_svg_to_pdf_file(svg_string, output_path)
