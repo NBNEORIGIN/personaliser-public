@@ -2820,7 +2820,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 const formData = new FormData();
                 formData.append('photo', file);
                 
-                const response = await fetch(`${API_BASE}/upload-photo`, {
+                const response = await fetch(`${API_BASE}/upload/photo`, {
                     method: 'POST',
                     body: formData
                 });
