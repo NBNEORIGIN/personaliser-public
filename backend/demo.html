@@ -2699,7 +2699,8 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                             // Check if user uploaded a photo for this slot
                             const row = Math.floor(i / template.tiling.cols);
                             const col = i % template.tiling.cols;
-                            const photoKey = `tile-r${row}-c${col}-${el.id}`;
+                            // Match the backend's group ID format (no "tile-" prefix)
+                            const photoKey = `r${row}-c${col}-${el.id}`;
                             const uploadedPhoto = photoDropTargets.get(photoKey);
                             
                             console.log(`[SLOT ${i}] Looking for photo with key: ${photoKey}`);
