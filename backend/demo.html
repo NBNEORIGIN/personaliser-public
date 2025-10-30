@@ -2949,12 +2949,14 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 
                 // Store photo data for regeneration
                 const elementId = groupElement.id.replace('image-group-', '');
+                console.log('[UPLOAD] Storing photo with key:', elementId);
                 photoDropTargets.set(elementId, {
                     file_url: photoUrl,
                     scale: 1.0,
                     offset_x_mm: 0,
                     offset_y_mm: 0
                 });
+                console.log('[UPLOAD] photoDropTargets now has:', Array.from(photoDropTargets.keys()));
                 
                 // Remove loading overlay
                 loadingOverlay.remove();
