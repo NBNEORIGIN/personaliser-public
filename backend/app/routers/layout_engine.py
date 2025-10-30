@@ -248,32 +248,41 @@ async def upload_csv(
 
 
 @router.post("/upload/graphic")
-async def upload_graphic(file: UploadFile = File(...)):
+async def upload_graphic(file: UploadFile = File(...), name: str = None):
     """
-    Upload a graphic/SVG file for use in templates.
+    Upload a graphic/PNG file for use in memorial products.
     
     **Parameters:**
-    - `file`: SVG or image file
+    - `file`: PNG or image file
+    - `name`: Optional custom name (e.g., "Cat.png")
     
     **Returns:**
     - File path to use in templates
     """
     try:
         from pathlib import Path
+        from ..settings import settings
         
-        # Create graphics directory if it doesn't exist
-        graphics_dir = Path("static/graphics")
+        # Create user graphics directory
+        graphics_dir = settings.DATA_DIR / "graphics" / "user-graphics"
         graphics_dir.mkdir(parents=True, exist_ok=True)
         
+        # Use custom name or original filename
+        filename = name if name else file.filename
+        # Sanitize filename
+        filename = "".join(c for c in filename if c.isalnum() or c in ".-_ ").strip()
+        file_path = graphics_dir / filename
+        
         # Save file
-        file_path = graphics_dir / file.filename
         content = await file.read()
         file_path.write_bytes(content)
         
+        print(f"[GRAPHIC] Uploaded: {filename} to {file_path}", flush=True)
+        
         return {
             "success": True,
-            "filename": file.filename,
-            "path": f"/static/graphics/{file.filename}",
+            "filename": filename,
+            "path": f"/static/graphics/user-graphics/{filename}",
             "message": "Graphic uploaded successfully"
         }
         
@@ -284,16 +293,49 @@ async def upload_graphic(file: UploadFile = File(...)):
         )
 
 
+@router.get("/graphics/list")
+async def list_graphics():
+    """
+    List all available user graphics.
+    
+    **Returns:**
+    - List of available graphics with paths
+    """
+    try:
+        from pathlib import Path
+        from ..settings import settings
+        
+        graphics_dir = settings.DATA_DIR / "graphics" / "user-graphics"
+        graphics_dir.mkdir(parents=True, exist_ok=True)
+        
+        graphics = []
+        for file_path in graphics_dir.iterdir():
+            if file_path.is_file() and file_path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.svg']:
+                graphics.append({
+                    "filename": file_path.name,
+                    "url": f"/static/graphics/user-graphics/{file_path.name}",
+                    "size": file_path.stat().st_size
+                })
+        
+        return {"graphics": graphics}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list graphics: {str(e)}"
+        )
+
+
 @router.post("/upload/photo")
 async def upload_photo(file: UploadFile = File(...)):
     """
     Upload a photo for use in photo products.
     
     **Parameters:**
-    - `file`: Photo file (JPG, PNG)
+    - `file`: Image file (JPG, PNG)
     
     **Returns:**
-    - File URL and metadata
+    - JSON with file URL and metadata
     """
     try:
         from pathlib import Path
@@ -331,12 +373,6 @@ async def upload_photo(file: UploadFile = File(...)):
         )
 
 
-@router.get("/graphics")
-async def list_graphics():
-    """
-    List all uploaded graphics.
-    
-    **Returns:**
     - List of available graphics with paths
     """
     try:

@@ -36,6 +36,7 @@ app.mount("/static/jobs", StaticFiles(directory=settings.JOBS_DIR), name="jobs")
 app.mount("/static/uploads", StaticFiles(directory=settings.UPLOADS_DIR), name="uploads")
 app.mount("/static/storage", StaticFiles(directory=settings.DATA_DIR / "storage"), name="storage")
 app.mount("/static/photos", StaticFiles(directory=settings.PHOTOS_DIR), name="photos")
+app.mount("/static/graphics/user-graphics", StaticFiles(directory=settings.DATA_DIR / "graphics" / "user-graphics"), name="user-graphics")
 
 # Ensure temp/download directory exists at startup
 settings.DOWNLOAD_TMP_DIR.mkdir(parents=True, exist_ok=True)
