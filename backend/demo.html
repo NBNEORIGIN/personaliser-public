@@ -2703,8 +2703,14 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                             const uploadedPhoto = photoDropTargets.get(photoKey);
                             
                             if (uploadedPhoto) {
-                                // Use uploaded photo
-                                slotContent[el.id] = uploadedPhoto;
+                                // Use uploaded photo - convert absolute URL back to relative for backend
+                                const photoDataForBackend = {
+                                    file_url: uploadedPhoto.file_url.replace(window.location.origin, ''),
+                                    scale: uploadedPhoto.scale,
+                                    offset_x_mm: uploadedPhoto.offset_x_mm,
+                                    offset_y_mm: uploadedPhoto.offset_y_mm
+                                };
+                                slotContent[el.id] = photoDataForBackend;
                             } else {
                                 // Use placeholder
                                 slotContent[el.id] = null;
