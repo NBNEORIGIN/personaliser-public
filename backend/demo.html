@@ -497,66 +497,6 @@
                 <div class="info-box">
                     <strong>🎨 Template Layout Engine</strong><br>
                     <em>Transform bulk orders into production-ready print plates in seconds</em>
-                    <br><br>
-                    <strong>📋 Quick Start Guide:</strong>
-                    <ol style="margin: 10px 0 0 20px; padding: 0; font-size: 13px;">
-                        <li><strong>Select Product Type</strong> - Text or Photo products</li>
-                        <li><strong>Choose Template</strong> - Or customize bed/part sizes</li>
-                        <li><strong>Upload CSV</strong> - Your order data (Name, Date, Message, etc.)</li>
-                        <li><strong>Map Columns</strong> - System auto-detects, adjust if needed</li>
-                        <li><strong>Generate!</strong> - Get SVG preview or PDF download</li>
-                    </ol>
-                    <br>
-                    <strong>✨ Key Benefits:</strong>
-                    <ul style="margin: 5px 0 0 20px; padding: 0; font-size: 13px;">
-                        <li>No coding required for new products</li>
-                        <li>Process 100s of orders instantly</li>
-                        <li>Editable SVG output for last-minute changes</li>
-                        <li>Production-ready PDF export</li>
-                    </ul>
-                </div>
-                
-                <div class="section">
-                    <h3>Quick Start Templates</h3>
-                    <div style="margin-bottom: 10px; padding: 10px; background: #fff3cd; border-radius: 4px; font-size: 12px;">
-                        <strong>💡 Choose your product type:</strong><br>
-                        <span style="color: #666;">Templates are pre-configured for common products</span>
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Product Type:</label>
-                        <select id="productType" onchange="toggleTemplates()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="">-- Select Product Type --</option>
-                            <option value="text">Text Only Memorial (Centered Layout)</option>
-                            <option value="photo">Photo Memorial (Photo Left, Text Right)</option>
-                        </select>
-                    </div>
-                    <div id="textTemplates" style="display:none;">
-                        <button class="btn btn-secondary" onclick="loadTemplate('text_memorial')" style="width: 100%; margin-bottom: 5px;">
-                            📝 Text Memorial - 140x90mm<br>
-                            <small style="font-size: 10px; opacity: 0.8;">Vertically centered text fields</small>
-                        </button>
-                        <button class="btn btn-secondary" onclick="loadTemplate('text_memorial_small')" style="width: 100%; margin-bottom: 5px;">
-                            📝 Text Memorial - 100x70mm<br>
-                            <small style="font-size: 10px; opacity: 0.8;">Smaller format</small>
-                        </button>
-                    </div>
-                    <div id="photoTemplates" style="display:none;">
-                        <button class="btn btn-secondary" onclick="loadTemplate('photo_memorial')" style="width: 100%; margin-bottom: 5px;">
-                            📸 Photo Memorial - 140x90mm<br>
-                            <small style="font-size: 10px; opacity: 0.8;">Photo left, text right</small>
-                        </button>
-                        <button class="btn btn-secondary" onclick="loadTemplate('photo_memorial_large')" style="width: 100%; margin-bottom: 5px;">
-                            📸 Photo Memorial - 180x120mm<br>
-                            <small style="font-size: 10px; opacity: 0.8;">Larger format</small>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <h3>Template Management</h3>
-                    <button class="btn btn-secondary" onclick="saveTemplate()">💾 Save Template</button>
-                    <button class="btn btn-secondary" onclick="document.getElementById('loadTemplateFile').click()">📂 Load Template</button>
-                    <input type="file" id="loadTemplateFile" accept=".json" style="display:none" onchange="loadTemplateFile(event)">
                 </div>
                 
                 <!-- STEP 1: Configure Layout -->
