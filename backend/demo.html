@@ -2839,11 +2839,27 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 }
                 
                 console.log('Photo uploaded:', photoUrl);
+                console.log('Image element:', imageElement);
+                console.log('Current href:', imageElement.getAttribute('href'));
                 
-                // Update the image element
+                // Force remove the old href first
+                imageElement.removeAttribute('href');
+                imageElement.removeAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href');
+                
+                // Update the image element with new photo
                 imageElement.setAttribute('href', photoUrl);
                 imageElement.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', photoUrl);
                 imageElement.setAttribute('data-photo-uploaded', 'true');
+                
+                // Force browser to reload the image
+                const tempHref = imageElement.getAttribute('href');
+                imageElement.setAttribute('href', '');
+                setTimeout(() => {
+                    imageElement.setAttribute('href', tempHref);
+                    imageElement.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', tempHref);
+                }, 10);
+                
+                console.log('New href set:', imageElement.getAttribute('href'));
                 
                 // Store photo data for regeneration
                 const elementId = groupElement.id.replace('image-group-', '');
