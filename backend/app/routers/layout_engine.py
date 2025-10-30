@@ -298,9 +298,10 @@ async def upload_photo(file: UploadFile = File(...)):
     try:
         from pathlib import Path
         import uuid
+        from ..settings import settings
         
-        # Create photos directory if it doesn't exist
-        photos_dir = Path("static/photos")
+        # Use settings.PHOTOS_DIR for correct path
+        photos_dir = settings.PHOTOS_DIR
         photos_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate unique filename
@@ -311,6 +312,9 @@ async def upload_photo(file: UploadFile = File(...)):
         # Save file
         content = await file.read()
         file_path.write_bytes(content)
+        
+        print(f"[UPLOAD] Photo saved to: {file_path}", flush=True)
+        print(f"[UPLOAD] File exists: {file_path.exists()}", flush=True)
         
         return {
             "success": True,
