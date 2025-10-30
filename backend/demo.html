@@ -2965,15 +2965,18 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             const photoData = photoDropTargets.get(elementId);
             if (!photoData) return;
             
-            // Create modal
+            const imageElement = groupElement.querySelector('image');
+            if (!imageElement) return;
+            
+            // Create modal with transparent background
             const modal = document.createElement('div');
-            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 10000;';
             
             const panel = document.createElement('div');
-            panel.style.cssText = 'background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;';
+            panel.style.cssText = 'position: absolute; top: 50px; right: 50px; background: white; padding: 20px; border-radius: 8px; width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); cursor: move;';
             
             panel.innerHTML = `
-                <h3 style="margin-top: 0;">📸 Edit Photo</h3>
+                <h3 style="margin-top: 0; cursor: move; user-select: none;">📸 Edit Photo (Drag to Move)</h3>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px;">Scale: <span id="scaleValue">${photoData.scale || 1.0}</span>x</label>
                     <input type="range" id="scaleSlider" value="${photoData.scale || 1.0}" min="0.5" max="3" step="0.1" style="width: 100%;">
@@ -2987,7 +2990,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                     <input type="range" id="offsetYSlider" value="${photoData.offset_y_mm || 0}" min="-20" max="20" step="1" style="width: 100%;">
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button id="applyBtn" style="flex: 1; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">✓ Apply</button>
+                    <button id="applyBtn" style="flex: 1; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">✓ Apply & Regenerate</button>
                     <button id="cancelBtn" style="flex: 1; background: #95a5a6; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">✕ Cancel</button>
                 </div>
             `;
@@ -2995,39 +2998,100 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             modal.appendChild(panel);
             document.body.appendChild(modal);
             
-            // Update values in real-time
+            // Make panel draggable
+            let isDragging = false;
+            let currentX, currentY, initialX, initialY;
+            
+            panel.querySelector('h3').addEventListener('mousedown', (e) => {
+                isDragging = true;
+                initialX = e.clientX - panel.offsetLeft;
+                initialY = e.clientY - panel.offsetTop;
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    panel.style.left = currentX + 'px';
+                    panel.style.top = currentY + 'px';
+                    panel.style.right = 'auto';
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            // Get image element for live preview
             const scaleSlider = panel.querySelector('#scaleSlider');
             const offsetXSlider = panel.querySelector('#offsetXSlider');
             const offsetYSlider = panel.querySelector('#offsetYSlider');
             
+            // Apply live preview function
+            function applyLivePreview() {
+                const scale = parseFloat(scaleSlider.value);
+                const offsetX = parseFloat(offsetXSlider.value);
+                const offsetY = parseFloat(offsetYSlider.value);
+                
+                // Get original dimensions
+                const width = parseFloat(imageElement.getAttribute('width'));
+                const height = parseFloat(imageElement.getAttribute('height'));
+                const baseX = parseFloat(imageElement.getAttribute('x'));
+                const baseY = parseFloat(imageElement.getAttribute('y'));
+                
+                // Apply scale transform (scale from center)
+                const centerX = baseX + width / 2;
+                const centerY = baseY + height / 2;
+                
+                // Create transform: translate to center, scale, translate back, then apply offset
+                const transform = `translate(${centerX + offsetX}, ${centerY + offsetY}) scale(${scale}) translate(${-width/2}, ${-height/2})`;
+                imageElement.setAttribute('transform', transform);
+            }
+            
+            // Update values and apply live preview
             scaleSlider.oninput = () => {
                 panel.querySelector('#scaleValue').textContent = scaleSlider.value;
+                applyLivePreview();
             };
             offsetXSlider.oninput = () => {
                 panel.querySelector('#offsetXValue').textContent = offsetXSlider.value;
+                applyLivePreview();
             };
             offsetYSlider.oninput = () => {
                 panel.querySelector('#offsetYValue').textContent = offsetYSlider.value;
+                applyLivePreview();
             };
             
-            // Apply button
-            panel.querySelector('#applyBtn').onclick = () => {
+            // Apply initial preview
+            applyLivePreview();
+            
+            // Apply button - save and regenerate
+            panel.querySelector('#applyBtn').onclick = async () => {
                 photoData.scale = parseFloat(scaleSlider.value);
                 photoData.offset_x_mm = parseFloat(offsetXSlider.value);
                 photoData.offset_y_mm = parseFloat(offsetYSlider.value);
                 photoDropTargets.set(elementId, photoData);
                 modal.remove();
-                document.getElementById('status').innerHTML = '<div class="success">✅ Photo updated! Click "Generate SVG" to see changes.</div>';
+                
+                // Auto-regenerate to apply changes properly
+                document.getElementById('status').innerHTML = '<div class="loading">⏳ Applying changes...</div>';
+                await generateSVG();
             };
             
-            // Cancel button
+            // Cancel button - revert changes
             panel.querySelector('#cancelBtn').onclick = () => {
+                // Reset transform
+                imageElement.removeAttribute('transform');
                 modal.remove();
             };
             
-            // Click outside to close
+            // Click outside to cancel
             modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
+                if (e.target === modal) {
+                    imageElement.removeAttribute('transform');
+                    modal.remove();
+                }
             };
         }
     </script>
