@@ -2818,7 +2818,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 
                 // Upload photo to server
                 const formData = new FormData();
-                formData.append('photo', file);
+                formData.append('file', file);
                 
                 const response = await fetch(`${API_BASE}/upload/photo`, {
                     method: 'POST',
