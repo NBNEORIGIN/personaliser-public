@@ -559,43 +559,27 @@
                     <input type="file" id="loadTemplateFile" accept=".json" style="display:none" onchange="loadTemplateFile(event)">
                 </div>
                 
-                <div class="section">
-                    <h3>Graphics Library</h3>
-                    <input type="file" id="graphicFile" accept=".svg,.png,.jpg" style="margin-bottom: 10px;">
-                    <button class="btn btn-secondary" onclick="uploadGraphic()">📤 Upload Graphic</button>
-                    <div id="graphicsList" style="margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 12px;"></div>
-                    <button class="btn btn-secondary" onclick="loadGraphics()" style="margin-top: 5px;">🔄 Refresh List</button>
+                <!-- STEP 1: Configure Layout -->
+                <div class="section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px;">
+                    <h3 style="color: white; margin-top: 0;">⚙️ Step 1: Configure Layout</h3>
+                    <button class="btn" onclick="openBedConfigurator()" style="width: 100%; margin-bottom: 10px; background: white; color: #667eea;">
+                        🎨 Bed & Tiling Setup
+                    </button>
+                    <button class="btn btn-secondary" onclick="openTemplateEditor()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white;">
+                        🎨 Template Editor
+                    </button>
+                    
+                    <!-- Hidden inputs for backend -->
+                    <input type="hidden" id="bedWidth" value="480">
+                    <input type="hidden" id="bedHeight" value="330">
+                    <input type="hidden" id="partWidth" value="140">
+                    <input type="hidden" id="partHeight" value="90">
                 </div>
                 
+                <!-- STEP 2: Upload Data -->
                 <div class="section">
-                    <h3>Photo Upload <span style="font-size: 12px; font-weight: normal; color: #666;">ℹ️ Drag & drop photos</span></h3>
-                    
-                    <!-- Drag & Drop Zone -->
-                    <div id="photoDropZone" style="
-                        border: 2px dashed #667eea;
-                        border-radius: 8px;
-                        padding: 30px;
-                        text-align: center;
-                        background: #f8f9ff;
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                        margin-bottom: 10px;
-                    " onclick="document.getElementById('photoFile').click()">
-                        <div style="font-size: 48px; margin-bottom: 10px;">📸</div>
-                        <div style="font-size: 14px; font-weight: 500; margin-bottom: 5px;">Drag & Drop Photos Here</div>
-                        <div style="font-size: 12px; color: #666;">or click to browse</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Supports: JPG, PNG • Paste with Ctrl+V</div>
-                    </div>
-                    
-                    <input type="file" id="photoFile" accept=".jpg,.jpeg,.png" multiple style="display: none;">
-                    
-                    <div id="photoStatus" style="margin-top: 10px; font-size: 12px;"></div>
-                    <div id="photosList" style="margin-top: 10px; max-height: 200px; overflow-y: auto; font-size: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px;"></div>
-                </div>
-                
-                <div class="section">
-                    <h3>CSV Upload</h3>
-                    <div style="margin-bottom: 10px; padding: 8px; background: #e8f4f8; border-radius: 4px; font-size: 12px;">
+                    <h3>📤 Step 2: Upload CSV Data</h3>
+                    <div style="margin-bottom: 10px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 12px;">
                         <strong>💡 Need a sample?</strong><br>
                         <button class="btn btn-secondary" onclick="downloadSampleCSV('text')" style="margin-top: 5px; font-size: 11px;">📥 Text Sample</button>
                         <button class="btn btn-secondary" onclick="downloadSampleCSV('photo')" style="margin-top: 5px; font-size: 11px;">📥 Photo Sample</button>
@@ -607,25 +591,74 @@
                             <!-- Dynamically populated based on template elements -->
                         </div>
                     </div>
-                    <button class="btn" onclick="uploadCSV()">📤 Upload & Generate</button>
+                    <button class="btn" onclick="uploadCSV()" style="width: 100%; font-size: 16px; padding: 12px;">✨ Upload & Generate</button>
                     <div id="csvStatus" style="margin-top: 10px; font-size: 12px;"></div>
                 </div>
                 
-                <div class="section">
-                    <h3>Bed & Part Configuration</h3>
-                    <button class="btn" onclick="openBedConfigurator()" style="width: 100%; margin-bottom: 10px;">
-                        🎨 Visual Bed & Tiling Setup
-                    </button>
-                    <button class="btn btn-secondary" onclick="openTemplateEditor()" style="width: 100%;">
-                        🎨 Visual Template Editor
-                    </button>
+                <!-- OPTIONAL: Photos & Graphics -->
+                <details class="section" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                    <summary style="cursor: pointer; font-weight: 600; padding: 5px;">📸 Optional: Photos & Graphics</summary>
                     
-                    <!-- Hidden inputs for backend -->
-                    <input type="hidden" id="bedWidth" value="480">
-                    <input type="hidden" id="bedHeight" value="330">
-                    <input type="hidden" id="partWidth" value="140">
-                    <input type="hidden" id="partHeight" value="90">
-                </div>
+                    <div style="margin-top: 15px;">
+                        <h4 style="margin: 10px 0 5px 0; font-size: 14px;">Photo Upload</h4>
+                        <div id="photoDropZone" style="
+                            border: 2px dashed #667eea;
+                            border-radius: 8px;
+                            padding: 20px;
+                            text-align: center;
+                            background: #f8f9ff;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            margin-bottom: 10px;
+                        " onclick="document.getElementById('photoFile').click()">
+                            <div style="font-size: 32px; margin-bottom: 5px;">📸</div>
+                            <div style="font-size: 12px; font-weight: 500; margin-bottom: 3px;">Drag & Drop Photos</div>
+                            <div style="font-size: 10px; color: #666;">or click to browse</div>
+                        </div>
+                        <input type="file" id="photoFile" accept=".jpg,.jpeg,.png" multiple style="display: none;">
+                        <div id="photoStatus" style="margin-top: 10px; font-size: 12px;"></div>
+                        <div id="photosList" style="margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 5px;"></div>
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <h4 style="margin: 10px 0 5px 0; font-size: 14px;">Graphics Library</h4>
+                        <input type="file" id="graphicFile" accept=".svg,.png,.jpg" style="margin-bottom: 5px; font-size: 11px;">
+                        <button class="btn btn-secondary" onclick="uploadGraphic()" style="font-size: 11px; padding: 6px 12px;">📤 Upload</button>
+                        <div id="graphicsList" style="margin-top: 10px; max-height: 100px; overflow-y: auto; font-size: 11px;"></div>
+                        <button class="btn btn-secondary" onclick="loadGraphics()" style="margin-top: 5px; font-size: 11px; padding: 6px 12px;">🔄 Refresh</button>
+                    </div>
+                </details>
+                
+                <!-- Manual Content (Hidden by default) -->
+                <details class="section" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                    <summary style="cursor: pointer; font-weight: 600; padding: 5px;">✏️ Manual Content Entry</summary>
+                    
+                    <div style="margin-top: 15px;">
+                        <h4 style="margin: 10px 0 5px 0; font-size: 14px;">Slot 0</h4>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Name Line</label>
+                            <input type="text" id="name0" value="In loving memory" placeholder="Enter text..." style="font-size: 12px; padding: 6px;">
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Message</label>
+                            <textarea id="message0" placeholder="Enter message..." style="font-size: 12px; padding: 6px; min-height: 60px;">John Kendall Newman
+1952 – 2024</textarea>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <h4 style="margin: 10px 0 5px 0; font-size: 14px;">Slot 1</h4>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Name Line</label>
+                            <input type="text" id="name1" value="Forever in our hearts" placeholder="Enter text..." style="font-size: 12px; padding: 6px;">
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Message</label>
+                            <textarea id="message1" placeholder="Enter message..." style="font-size: 12px; padding: 6px; min-height: 60px;">Mary Elizabeth Smith
+1945 – 2024</textarea>
+                        </div>
+                    </div>
+                </details>
                 
                 <!-- Hidden tiling inputs for backend -->
                 <input type="hidden" id="cols" value="3">
@@ -634,32 +667,6 @@
                 <input type="hidden" id="gapY" value="5">
                 <input type="hidden" id="offsetX" value="0">
                 <input type="hidden" id="offsetY" value="0">
-                
-                <div class="section">
-                    <h3>Content - Slot 0</h3>
-                    <div class="input-group">
-                        <label>Name Line</label>
-                        <input type="text" id="name0" value="In loving memory" placeholder="Enter text...">
-                    </div>
-                    <div class="input-group">
-                        <label>Message (multiline)</label>
-                        <textarea id="message0" placeholder="Enter message...">John Kendall Newman
-1952 – 2024</textarea>
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <h3>Content - Slot 1</h3>
-                    <div class="input-group">
-                        <label>Name Line</label>
-                        <input type="text" id="name1" value="Forever in our hearts" placeholder="Enter text...">
-                    </div>
-                    <div class="input-group">
-                        <label>Message (multiline)</label>
-                        <textarea id="message1" placeholder="Enter message...">Mary Elizabeth Smith
-1945 – 2024</textarea>
-                    </div>
-                </div>
                 
             </div>
             
