@@ -359,6 +359,78 @@
             </div>
         </div>
         
+        <!-- Bed Configurator Modal -->
+        <div id="bedConfiguratorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; overflow: auto;">
+            <div style="background: white; margin: 20px auto; max-width: 1400px; border-radius: 8px; padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">🎨 Visual Bed & Tiling Setup</h2>
+                    <button onclick="closeBedConfigurator()" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">✕ Close</button>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 20px;">
+                    <!-- Controls -->
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 4px;">
+                        <h3 style="margin-top: 0;">Bed Size</h3>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; font-size: 12px; margin-bottom: 3px;">Width (mm)</label>
+                            <input type="number" id="bedWidthConfig" value="480" onchange="updateBedPreview()" style="width: 100%; padding: 6px;">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 12px; margin-bottom: 3px;">Height (mm)</label>
+                            <input type="number" id="bedHeightConfig" value="330" onchange="updateBedPreview()" style="width: 100%; padding: 6px;">
+                        </div>
+                        
+                        <hr style="margin: 15px 0;">
+                        
+                        <h3>Part Shape</h3>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">
+                                <input type="radio" name="partShape" value="rectangle" checked onchange="updateBedPreview()"> Rectangle
+                            </label>
+                            <label style="display: block;">
+                                <input type="radio" name="partShape" value="circle" onchange="updateBedPreview()"> Circle
+                            </label>
+                        </div>
+                        
+                        <h3>Part Size</h3>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; font-size: 12px; margin-bottom: 3px;">Width/Diameter (mm)</label>
+                            <input type="number" id="partWidthConfig" value="140" onchange="updateBedPreview()" style="width: 100%; padding: 6px;">
+                        </div>
+                        <div id="partHeightConfigDiv" style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 12px; margin-bottom: 3px;">Height (mm)</label>
+                            <input type="number" id="partHeightConfig" value="90" onchange="updateBedPreview()" style="width: 100%; padding: 6px;">
+                        </div>
+                        
+                        <hr style="margin: 15px 0;">
+                        
+                        <h3>Tiling</h3>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; font-size: 12px; margin-bottom: 3px;">Gap X (mm)</label>
+                            <input type="number" id="gapXConfig" value="5" onchange="updateBedPreview()" style="width: 100%; padding: 6px;">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 12px; margin-bottom: 3px;">Gap Y (mm)</label>
+                            <input type="number" id="gapYConfig" value="5" onchange="updateBedPreview()" style="width: 100%; padding: 6px;">
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: #e8f4f8; border-radius: 4px; font-size: 12px;">
+                            <strong>Capacity:</strong> <span id="bedCapacity">9 parts</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview -->
+                    <div style="background: #e8e8e8; border: 2px solid #333; border-radius: 4px; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 500px;">
+                        <div id="bedPreviewCanvas" style="position: relative; background: #fff; border: 2px solid #666; box-shadow: 0 4px 20px rgba(0,0,0,0.3);"></div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: right; padding-top: 15px; border-top: 2px solid #ddd;">
+                    <button class="btn" onclick="applyBedConfig()" style="padding: 12px 30px; font-size: 16px;">✅ Apply Configuration</button>
+                </div>
+            </div>
+        </div>
+        
         <div class="content">
             <div class="sidebar">
                 <div class="info-box">
@@ -490,6 +562,9 @@
                             <input type="number" id="bedHeight" value="330">
                         </div>
                     </div>
+                    <button class="btn btn-secondary" onclick="openBedConfigurator()" style="margin-top: 10px;">
+                        🎨 Visual Bed & Tiling Setup
+                    </button>
                 </div>
                 
                 <div class="section">
@@ -1789,15 +1864,15 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             const partWidth = parseFloat(document.getElementById('partWidth').value);
             const partHeight = parseFloat(document.getElementById('partHeight').value);
             
-            // Scale factor for display (4px per mm for better visibility)
-            const scale = 4;
+            // Scale factor for display (6px per mm - 150% larger)
+            const scale = 6;
             
             canvas.style.width = (partWidth * scale) + 'px';
             canvas.style.height = (partHeight * scale) + 'px';
             canvas.style.border = '2px solid #333';
             canvas.style.background = '#fff';
-            canvas.style.minWidth = '600px';
-            canvas.style.minHeight = '400px';
+            canvas.style.minWidth = '840px';
+            canvas.style.minHeight = '540px';
             
             // Clear canvas
             canvas.innerHTML = '';
@@ -1902,7 +1977,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
         function resize(e) {
             if (!resizingElement) return;
             
-            const scale = 4;
+            const scale = 6;
             const dx = (e.clientX - resizeStartPos.x) / scale;
             const dy = (e.clientY - resizeStartPos.y) / scale;
             
@@ -1953,7 +2028,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             draggedElement = templateElements[index];
             selectedElement = index;
             
-            const scale = 4;
+            const scale = 6;
             const rect = e.currentTarget.getBoundingClientRect();
             dragOffset.x = e.clientX - rect.left;
             dragOffset.y = e.clientY - rect.top;
@@ -1967,7 +2042,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             
             const canvas = document.getElementById('templateCanvas');
             const rect = canvas.getBoundingClientRect();
-            const scale = 4;
+            const scale = 6;
             
             let x = (e.clientX - rect.left - dragOffset.x) / scale;
             let y = (e.clientY - rect.top - dragOffset.y) / scale;
@@ -2077,7 +2152,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
         function previewTemplate() {
             // Generate a preview with sample data
             const canvas = document.getElementById('templateCanvas');
-            const scale = 4;
+            const scale = 6;
             
             // Add sample text to text elements
             templateElements.forEach((element, index) => {
@@ -2203,6 +2278,111 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
         
         // Hide context menu on click anywhere
         document.addEventListener('click', hideContextMenu);
+        
+        // Bed Configurator Functions
+        function openBedConfigurator() {
+            // Load current values
+            document.getElementById('bedWidthConfig').value = document.getElementById('bedWidth').value;
+            document.getElementById('bedHeightConfig').value = document.getElementById('bedHeight').value;
+            document.getElementById('partWidthConfig').value = document.getElementById('partWidth').value;
+            document.getElementById('partHeightConfig').value = document.getElementById('partHeight').value;
+            document.getElementById('gapXConfig').value = document.getElementById('gapX').value;
+            document.getElementById('gapYConfig').value = document.getElementById('gapY').value;
+            
+            document.getElementById('bedConfiguratorModal').style.display = 'block';
+            updateBedPreview();
+        }
+        
+        function closeBedConfigurator() {
+            document.getElementById('bedConfiguratorModal').style.display = 'none';
+        }
+        
+        function updateBedPreview() {
+            const bedWidth = parseFloat(document.getElementById('bedWidthConfig').value);
+            const bedHeight = parseFloat(document.getElementById('bedHeightConfig').value);
+            const partWidth = parseFloat(document.getElementById('partWidthConfig').value);
+            const partHeight = parseFloat(document.getElementById('partHeightConfig').value);
+            const gapX = parseFloat(document.getElementById('gapXConfig').value);
+            const gapY = parseFloat(document.getElementById('gapYConfig').value);
+            const shape = document.querySelector('input[name="partShape"]:checked').value;
+            
+            // Hide height input for circles
+            document.getElementById('partHeightConfigDiv').style.display = shape === 'circle' ? 'none' : 'block';
+            
+            const actualPartHeight = shape === 'circle' ? partWidth : partHeight;
+            
+            // Calculate how many parts fit
+            const cols = Math.floor((bedWidth + gapX) / (partWidth + gapX));
+            const rows = Math.floor((bedHeight + gapY) / (actualPartHeight + gapY));
+            const capacity = cols * rows;
+            
+            document.getElementById('bedCapacity').textContent = `${capacity} parts (${cols} × ${rows})`;
+            
+            // Render preview
+            const canvas = document.getElementById('bedPreviewCanvas');
+            const scale = Math.min(800 / bedWidth, 500 / bedHeight);
+            
+            canvas.style.width = (bedWidth * scale) + 'px';
+            canvas.style.height = (bedHeight * scale) + 'px';
+            canvas.innerHTML = '';
+            
+            // Draw parts
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const x = col * (partWidth + gapX);
+                    const y = row * (actualPartHeight + gapY);
+                    
+                    const part = document.createElement('div');
+                    part.style.position = 'absolute';
+                    part.style.left = (x * scale) + 'px';
+                    part.style.top = (y * scale) + 'px';
+                    part.style.width = (partWidth * scale) + 'px';
+                    part.style.height = (actualPartHeight * scale) + 'px';
+                    part.style.border = '1px solid #667eea';
+                    part.style.background = 'rgba(102, 126, 234, 0.1)';
+                    
+                    if (shape === 'circle') {
+                        part.style.borderRadius = '50%';
+                    }
+                    
+                    canvas.appendChild(part);
+                }
+            }
+        }
+        
+        function applyBedConfig() {
+            // Apply values to main form
+            document.getElementById('bedWidth').value = document.getElementById('bedWidthConfig').value;
+            document.getElementById('bedHeight').value = document.getElementById('bedHeightConfig').value;
+            document.getElementById('partWidth').value = document.getElementById('partWidthConfig').value;
+            
+            const shape = document.querySelector('input[name="partShape"]:checked').value;
+            if (shape === 'circle') {
+                document.getElementById('partHeight').value = document.getElementById('partWidthConfig').value;
+            } else {
+                document.getElementById('partHeight').value = document.getElementById('partHeightConfig').value;
+            }
+            
+            document.getElementById('gapX').value = document.getElementById('gapXConfig').value;
+            document.getElementById('gapY').value = document.getElementById('gapYConfig').value;
+            
+            // Calculate and update cols/rows
+            const bedWidth = parseFloat(document.getElementById('bedWidth').value);
+            const bedHeight = parseFloat(document.getElementById('bedHeight').value);
+            const partWidth = parseFloat(document.getElementById('partWidth').value);
+            const partHeight = parseFloat(document.getElementById('partHeight').value);
+            const gapX = parseFloat(document.getElementById('gapX').value);
+            const gapY = parseFloat(document.getElementById('gapY').value);
+            
+            const cols = Math.floor((bedWidth + gapX) / (partWidth + gapX));
+            const rows = Math.floor((bedHeight + gapY) / (partHeight + gapY));
+            
+            document.getElementById('cols').value = cols;
+            document.getElementById('rows').value = rows;
+            
+            closeBedConfigurator();
+            alert(`✅ Configuration applied!\n\nBed: ${bedWidth}×${bedHeight}mm\nPart: ${partWidth}×${partHeight}mm (${shape})\nCapacity: ${cols}×${rows} = ${cols*rows} parts`);
+        }
         
         async function generateSVG() {
             const status = document.getElementById('status');
