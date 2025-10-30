@@ -2830,10 +2830,19 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 }
                 
                 const data = await response.json();
-                const photoUrl = data.url || data.file_url;
+                let photoUrl = data.url || data.file_url;
+                
+                // Ensure URL is absolute
+                if (photoUrl && !photoUrl.startsWith('http')) {
+                    // Convert relative URL to absolute
+                    photoUrl = window.location.origin + photoUrl;
+                }
+                
+                console.log('Photo uploaded:', photoUrl);
                 
                 // Update the image element
                 imageElement.setAttribute('href', photoUrl);
+                imageElement.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', photoUrl);
                 imageElement.setAttribute('data-photo-uploaded', 'true');
                 
                 // Store photo data for regeneration
