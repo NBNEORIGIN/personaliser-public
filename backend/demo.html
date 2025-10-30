@@ -129,17 +129,44 @@
         }
         
         .btn-secondary {
-            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            background: #95a5a6;
         }
         
         .btn-secondary:hover {
-            box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+            background: #7f8c8d;
         }
         
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+        
+        .alignment-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .alignment-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .alignment-btn-selected {
+            border-color: #667eea !important;
+            background: #f0f0ff !important;
+        }
+        
+        .alignment-btn input[type="radio"] {
+            margin: 0;
+            cursor: pointer;
         }
         
         .preview {
@@ -412,6 +439,37 @@
                         <div style="margin-bottom: 15px;">
                             <label style="display: block; font-size: 12px; margin-bottom: 3px;">Gap Y (mm)</label>
                             <input type="number" id="gapYConfig" value="5" onchange="updateBedPreview()" style="width: 100%; padding: 6px;">
+                        </div>
+                        
+                        <h3>Alignment</h3>
+                        <div id="alignmentGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 15px;">
+                            <label class="alignment-btn" title="Top Left">
+                                <input type="radio" name="alignment" value="top-left" onchange="updateAlignmentUI(); updateBedPreview();">
+                            </label>
+                            <label class="alignment-btn" title="Top Center">
+                                <input type="radio" name="alignment" value="top-center" onchange="updateAlignmentUI(); updateBedPreview();">
+                            </label>
+                            <label class="alignment-btn" title="Top Right">
+                                <input type="radio" name="alignment" value="top-right" onchange="updateAlignmentUI(); updateBedPreview();">
+                            </label>
+                            <label class="alignment-btn" title="Middle Left">
+                                <input type="radio" name="alignment" value="middle-left" onchange="updateAlignmentUI(); updateBedPreview();">
+                            </label>
+                            <label class="alignment-btn alignment-btn-selected" title="Center">
+                                <input type="radio" name="alignment" value="center" checked onchange="updateAlignmentUI(); updateBedPreview();">
+                            </label>
+                            <label class="alignment-btn" title="Middle Right">
+                                <input type="radio" name="alignment" value="middle-right" onchange="updateAlignmentUI(); updateBedPreview();">
+                            </label>
+                            <label class="alignment-btn" title="Bottom Left">
+                                <input type="radio" name="alignment" value="bottom-left" onchange="updateAlignmentUI(); updateBedPreview();">
+                            </label>
+                            <label class="alignment-btn" title="Bottom Center">
+                                <input type="radio" name="alignment" value="bottom-center" onchange="updateAlignmentUI(); updateBedPreview();">
+                            </label>
+                            <label class="alignment-btn" title="Bottom Right">
+                                <input type="radio" name="alignment" value="bottom-right" onchange="updateAlignmentUI(); updateBedPreview();">
+                            </label>
                         </div>
                         
                         <div style="margin-top: 15px; padding: 10px; background: #e8f4f8; border-radius: 4px; font-size: 12px;">
@@ -2297,6 +2355,17 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             document.getElementById('bedConfiguratorModal').style.display = 'none';
         }
         
+        function updateAlignmentUI() {
+            // Update visual feedback for selected alignment button
+            document.querySelectorAll('.alignment-btn').forEach(btn => {
+                btn.classList.remove('alignment-btn-selected');
+            });
+            const selectedRadio = document.querySelector('input[name="alignment"]:checked');
+            if (selectedRadio) {
+                selectedRadio.parentElement.classList.add('alignment-btn-selected');
+            }
+        }
+        
         function updateBedPreview() {
             const bedWidth = parseFloat(document.getElementById('bedWidthConfig').value);
             const bedHeight = parseFloat(document.getElementById('bedHeightConfig').value);
@@ -2305,6 +2374,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             const gapX = parseFloat(document.getElementById('gapXConfig').value);
             const gapY = parseFloat(document.getElementById('gapYConfig').value);
             const shape = document.querySelector('input[name="partShape"]:checked').value;
+            const alignment = document.querySelector('input[name="alignment"]:checked').value;
             
             // Hide height input for circles
             document.getElementById('partHeightConfigDiv').style.display = shape === 'circle' ? 'none' : 'block';
@@ -2318,6 +2388,30 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             
             document.getElementById('bedCapacity').textContent = `${capacity} parts (${cols} × ${rows})`;
             
+            // Calculate total grid size
+            const gridWidth = cols * partWidth + (cols - 1) * gapX;
+            const gridHeight = rows * actualPartHeight + (rows - 1) * gapY;
+            
+            // Calculate offset based on alignment
+            let offsetX = 0;
+            let offsetY = 0;
+            
+            // Horizontal alignment
+            if (alignment.includes('center')) {
+                offsetX = (bedWidth - gridWidth) / 2;
+            } else if (alignment.includes('right')) {
+                offsetX = bedWidth - gridWidth;
+            }
+            // else: left alignment (offsetX = 0)
+            
+            // Vertical alignment
+            if (alignment.includes('middle')) {
+                offsetY = (bedHeight - gridHeight) / 2;
+            } else if (alignment.includes('bottom')) {
+                offsetY = bedHeight - gridHeight;
+            }
+            // else: top alignment (offsetY = 0)
+            
             // Render preview
             const canvas = document.getElementById('bedPreviewCanvas');
             const scale = Math.min(800 / bedWidth, 500 / bedHeight);
@@ -2326,11 +2420,11 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             canvas.style.height = (bedHeight * scale) + 'px';
             canvas.innerHTML = '';
             
-            // Draw parts
+            // Draw parts with offset
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
-                    const x = col * (partWidth + gapX);
-                    const y = row * (actualPartHeight + gapY);
+                    const x = offsetX + col * (partWidth + gapX);
+                    const y = offsetY + row * (actualPartHeight + gapY);
                     
                     const part = document.createElement('div');
                     part.style.position = 'absolute';
