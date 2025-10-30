@@ -172,19 +172,15 @@ def render_image_element(
     elif isinstance(content, str):
         image_path = content
     
-    if not image_path:
-        # Render placeholder rectangle
-        element_id = generate_unique_id("image-placeholder", row, col, element.id)
-        return (
-            f'<rect id="{element_id}" '
-            f'x="{element.x_mm}" y="{element.y_mm}" '
-            f'width="{element.w_mm}" height="{element.h_mm}" '
-            f'fill="#f0f0f0" stroke="#cccccc" stroke-width="0.5" />'
-        )
-    
+    # Always create image element (even if no photo) for drag & drop
     svg_parts = []
     element_id = generate_unique_id("image", row, col, element.id)
     group_id = generate_unique_id("image-group", row, col, element.id)
+    
+    # Use placeholder image if no path provided
+    if not image_path:
+        # Use data URI for placeholder (light gray square)
+        image_path = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3C/svg%3E"
     
     # Start group for image + frame
     svg_parts.append(f'<g id="{group_id}">')
