@@ -478,7 +478,10 @@
                     </div>
                     
                     <!-- Preview -->
-                    <div style="background: #e8e8e8; border: 2px solid #333; border-radius: 4px; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 500px;">
+                    <div style="background: #e8e8e8; border: 2px solid #333; border-radius: 4px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 500px;">
+                        <div style="margin-bottom: 10px; padding: 8px 12px; background: #fff3cd; border-radius: 4px; font-size: 12px;">
+                            💡 <strong>Tip:</strong> Drag the corners of any part to resize
+                        </div>
                         <div id="bedPreviewCanvas" style="position: relative; background: #fff; border: 2px solid #666; box-shadow: 0 4px 20px rgba(0,0,0,0.3);"></div>
                     </div>
                 </div>
@@ -2397,17 +2400,17 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             let offsetY = 0;
             
             // Horizontal alignment
-            if (alignment.includes('center')) {
+            if (alignment === 'center' || alignment === 'top-center' || alignment === 'bottom-center') {
                 offsetX = (bedWidth - gridWidth) / 2;
-            } else if (alignment.includes('right')) {
+            } else if (alignment.endsWith('-right')) {
                 offsetX = bedWidth - gridWidth;
             }
             // else: left alignment (offsetX = 0)
             
             // Vertical alignment
-            if (alignment.includes('middle')) {
+            if (alignment === 'center' || alignment === 'middle-left' || alignment === 'middle-right') {
                 offsetY = (bedHeight - gridHeight) / 2;
-            } else if (alignment.includes('bottom')) {
+            } else if (alignment.startsWith('bottom-')) {
                 offsetY = bedHeight - gridHeight;
             }
             // else: top alignment (offsetY = 0)
@@ -2425,6 +2428,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 for (let col = 0; col < cols; col++) {
                     const x = offsetX + col * (partWidth + gapX);
                     const y = offsetY + row * (actualPartHeight + gapY);
+                    const isFirstPart = (row === 0 && col === 0);
                     
                     const part = document.createElement('div');
                     part.style.position = 'absolute';
@@ -2432,16 +2436,83 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                     part.style.top = (y * scale) + 'px';
                     part.style.width = (partWidth * scale) + 'px';
                     part.style.height = (actualPartHeight * scale) + 'px';
-                    part.style.border = '1px solid #667eea';
-                    part.style.background = 'rgba(102, 126, 234, 0.1)';
+                    part.style.border = isFirstPart ? '2px solid #667eea' : '1px solid #667eea';
+                    part.style.background = isFirstPart ? 'rgba(102, 126, 234, 0.2)' : 'rgba(102, 126, 234, 0.1)';
                     
                     if (shape === 'circle') {
                         part.style.borderRadius = '50%';
                     }
                     
+                    // Add resize handles to first part only
+                    if (isFirstPart) {
+                        part.style.cursor = 'move';
+                        
+                        // Add resize handles (4 corners)
+                        const handlePositions = [
+                            { pos: 'se', cursor: 'se-resize', bottom: '-4px', right: '-4px' }
+                        ];
+                        
+                        handlePositions.forEach(h => {
+                            const handle = document.createElement('div');
+                            handle.style.cssText = `position: absolute; width: 10px; height: 10px; background: #667eea; border: 2px solid white; cursor: ${h.cursor}; z-index: 10; border-radius: 2px;`;
+                            if (h.top) handle.style.top = h.top;
+                            if (h.bottom) handle.style.bottom = h.bottom;
+                            if (h.left) handle.style.left = h.left;
+                            if (h.right) handle.style.right = h.right;
+                            handle.dataset.handle = h.pos;
+                            handle.addEventListener('mousedown', startBedPartResize);
+                            part.appendChild(handle);
+                        });
+                    }
+                    
                     canvas.appendChild(part);
                 }
             }
+        }
+        
+        // Bed part resize functionality
+        let bedResizeStartPos = { x: 0, y: 0 };
+        let bedResizeStartSize = { w: 0, h: 0 };
+        
+        function startBedPartResize(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            bedResizeStartPos.x = e.clientX;
+            bedResizeStartPos.y = e.clientY;
+            bedResizeStartSize.w = parseFloat(document.getElementById('partWidthConfig').value);
+            bedResizeStartSize.h = parseFloat(document.getElementById('partHeightConfig').value);
+            
+            document.addEventListener('mousemove', bedPartResize);
+            document.addEventListener('mouseup', stopBedPartResize);
+        }
+        
+        function bedPartResize(e) {
+            const canvas = document.getElementById('bedPreviewCanvas');
+            const bedWidth = parseFloat(document.getElementById('bedWidthConfig').value);
+            const bedHeight = parseFloat(document.getElementById('bedHeightConfig').value);
+            const scale = Math.min(800 / bedWidth, 500 / bedHeight);
+            
+            const dx = (e.clientX - bedResizeStartPos.x) / scale;
+            const dy = (e.clientY - bedResizeStartPos.y) / scale;
+            
+            const shape = document.querySelector('input[name="partShape"]:checked').value;
+            
+            // Update part size
+            const newWidth = Math.max(10, Math.round(bedResizeStartSize.w + dx));
+            const newHeight = shape === 'circle' ? newWidth : Math.max(10, Math.round(bedResizeStartSize.h + dy));
+            
+            document.getElementById('partWidthConfig').value = newWidth;
+            if (shape !== 'circle') {
+                document.getElementById('partHeightConfig').value = newHeight;
+            }
+            
+            updateBedPreview();
+        }
+        
+        function stopBedPartResize() {
+            document.removeEventListener('mousemove', bedPartResize);
+            document.removeEventListener('mouseup', stopBedPartResize);
         }
         
         function applyBedConfig() {
