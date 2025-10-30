@@ -2702,6 +2702,10 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                             const photoKey = `tile-r${row}-c${col}-${el.id}`;
                             const uploadedPhoto = photoDropTargets.get(photoKey);
                             
+                            console.log(`[SLOT ${i}] Looking for photo with key: ${photoKey}`);
+                            console.log(`[SLOT ${i}] Found photo:`, uploadedPhoto);
+                            console.log(`[SLOT ${i}] All keys in photoDropTargets:`, Array.from(photoDropTargets.keys()));
+                            
                             if (uploadedPhoto) {
                                 // Use uploaded photo - convert absolute URL back to relative for backend
                                 const photoDataForBackend = {
@@ -2710,9 +2714,11 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                                     offset_x_mm: uploadedPhoto.offset_x_mm,
                                     offset_y_mm: uploadedPhoto.offset_y_mm
                                 };
+                                console.log(`[SLOT ${i}] Sending photo data:`, photoDataForBackend);
                                 slotContent[el.id] = photoDataForBackend;
                             } else {
                                 // Use placeholder
+                                console.log(`[SLOT ${i}] No photo found, using null`);
                                 slotContent[el.id] = null;
                             }
                         }
