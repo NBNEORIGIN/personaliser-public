@@ -1045,12 +1045,21 @@
                 const totalSlots = template.tiling.cols * template.tiling.rows;
                 const slots = [];
                 for (let i = 0; i < totalSlots; i++) {
-                    slots.push({
+                    const slotContent = {
                         slot_index: i,
                         nameLine: document.getElementById('name0')?.value || `Item ${i + 1}`,
                         messageBlock: document.getElementById('message0')?.value || `Sample text ${i + 1}`,
                         additionalText: `Line 3 - ${i + 1}`
+                    };
+                    
+                    // Add placeholder for any image elements in template
+                    template.part.elements.forEach(el => {
+                        if (el.type === 'image') {
+                            slotContent[el.id] = null; // null will render as placeholder
+                        }
                     });
+                    
+                    slots.push(slotContent);
                 }
                 
                 const content = { slots };
@@ -2664,12 +2673,21 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 const totalSlots = template.tiling.cols * template.tiling.rows;
                 const slots = [];
                 for (let i = 0; i < totalSlots; i++) {
-                    slots.push({
+                    const slotContent = {
                         slot_index: i,
                         nameLine: document.getElementById('name0')?.value || `Item ${i + 1}`,
                         messageBlock: document.getElementById('message0')?.value || `Sample text ${i + 1}`,
                         additionalText: `Line 3 - ${i + 1}`
+                    };
+                    
+                    // Add placeholder for any image elements in template
+                    template.part.elements.forEach(el => {
+                        if (el.type === 'image') {
+                            slotContent[el.id] = null; // null will render as placeholder
+                        }
                     });
+                    
+                    slots.push(slotContent);
                 }
                 
                 const content = { slots };
