@@ -673,10 +673,13 @@
             <div class="main">
                 <div id="status"></div>
                 
-                <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; gap: 10px; align-items: stretch;">
-                    <button class="btn" onclick="generateSVG()" style="flex: 1; padding: 12px;">🎨 Generate SVG</button>
-                    <button class="btn btn-secondary" onclick="downloadSVG()" style="flex: 1; padding: 12px;">💾 Download SVG</button>
-                    <button class="btn btn-secondary" onclick="downloadPDF()" style="flex: 1; padding: 12px;">📄 Download PDF</button>
+                <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                    <div style="display: flex; gap: 10px; align-items: stretch; margin-bottom: 10px;">
+                        <button class="btn" onclick="generateSVG()" style="flex: 1; padding: 12px;">🎨 Generate SVG</button>
+                        <button class="btn btn-secondary" onclick="downloadSVG()" style="flex: 1; padding: 12px;">💾 Download SVG</button>
+                        <button class="btn btn-secondary" onclick="downloadPDF()" style="flex: 1; padding: 12px;">📄 Download PDF</button>
+                    </div>
+                    <button class="btn btn-secondary" onclick="openTemplateEditor()" style="width: 100%; padding: 8px; font-size: 13px;">✏️ Edit Template Layout</button>
                 </div>
                 
                 <div id="previewContainer">
@@ -1910,8 +1913,16 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             canvas.style.minWidth = '840px';
             canvas.style.minHeight = '540px';
             
-            // Clear canvas
+            // Clear canvas but preserve snap guides
+            const existingGuides = {
+                vertical: document.getElementById('snapGuidevertical'),
+                horizontal: document.getElementById('snapGuidehorizontal')
+            };
             canvas.innerHTML = '';
+            
+            // Restore snap guides if they existed
+            if (existingGuides.vertical) canvas.appendChild(existingGuides.vertical);
+            if (existingGuides.horizontal) canvas.appendChild(existingGuides.horizontal);
             
             // Render each element
             templateElements.forEach((element, index) => {
@@ -2136,17 +2147,18 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 guide.style.background = '#ff0066';
                 guide.style.pointerEvents = 'none';
                 guide.style.zIndex = '1000';
-                guide.style.opacity = '0.6';
+                guide.style.opacity = '0.8';
+                guide.style.boxShadow = '0 0 4px rgba(255,0,102,0.5)';
                 
                 if (orientation === 'vertical') {
-                    guide.style.width = '1px';
+                    guide.style.width = '2px';
                     guide.style.height = (partHeight * scale) + 'px';
-                    guide.style.left = (partWidth / 2 * scale) + 'px';
+                    guide.style.left = (partWidth / 2 * scale - 1) + 'px';
                     guide.style.top = '0';
                 } else {
-                    guide.style.height = '1px';
+                    guide.style.height = '2px';
                     guide.style.width = (partWidth * scale) + 'px';
-                    guide.style.top = (partHeight / 2 * scale) + 'px';
+                    guide.style.top = (partHeight / 2 * scale - 1) + 'px';
                     guide.style.left = '0';
                 }
                 
