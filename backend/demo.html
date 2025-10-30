@@ -859,7 +859,7 @@
                         h_mm: photoSize,
                         fit: "cover",
                         clip_shape: { kind: "rounded_rect", radius_mm: 4 },
-                        frame_source: "/static/graphics/frame-gold.svg",
+                        frame_source: "simple-gold",
                         editable: true
                     },
                     {
@@ -1337,7 +1337,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
         }
         
         // Store current template type
-        let currentTemplateType = 'text_memorial';
+        let currentTemplateType = 'photo_memorial'; // Default to photo template
         
         function loadTemplate(type) {
             currentTemplateType = type;
