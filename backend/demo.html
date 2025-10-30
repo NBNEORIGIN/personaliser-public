@@ -2083,9 +2083,35 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             let x = (e.clientX - rect.left - dragOffset.x) / scale;
             let y = (e.clientY - rect.top - dragOffset.y) / scale;
             
+            const partWidth = parseFloat(document.getElementById('partWidth').value);
+            const partHeight = parseFloat(document.getElementById('partHeight').value);
+            
             // Constrain to canvas
-            x = Math.max(0, Math.min(x, parseFloat(document.getElementById('partWidth').value) - draggedElement.w_mm));
-            y = Math.max(0, Math.min(y, parseFloat(document.getElementById('partHeight').value) - draggedElement.h_mm));
+            x = Math.max(0, Math.min(x, partWidth - draggedElement.w_mm));
+            y = Math.max(0, Math.min(y, partHeight - draggedElement.h_mm));
+            
+            // Snap to center with threshold
+            const snapThreshold = 3; // 3mm snap distance
+            const elementCenterX = x + draggedElement.w_mm / 2;
+            const elementCenterY = y + draggedElement.h_mm / 2;
+            const canvasCenterX = partWidth / 2;
+            const canvasCenterY = partHeight / 2;
+            
+            // Snap horizontally to center
+            if (Math.abs(elementCenterX - canvasCenterX) < snapThreshold) {
+                x = canvasCenterX - draggedElement.w_mm / 2;
+                showSnapGuide('vertical');
+            } else {
+                hideSnapGuide('vertical');
+            }
+            
+            // Snap vertically to center
+            if (Math.abs(elementCenterY - canvasCenterY) < snapThreshold) {
+                y = canvasCenterY - draggedElement.h_mm / 2;
+                showSnapGuide('horizontal');
+            } else {
+                hideSnapGuide('horizontal');
+            }
             
             draggedElement.x_mm = Math.round(x);
             draggedElement.y_mm = Math.round(y);
@@ -2094,8 +2120,54 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             updateElementProperties();
         }
         
+        function showSnapGuide(orientation) {
+            const canvas = document.getElementById('templateCanvas');
+            const partWidth = parseFloat(document.getElementById('partWidth').value);
+            const partHeight = parseFloat(document.getElementById('partHeight').value);
+            const scale = 6;
+            
+            let guideId = 'snapGuide' + orientation;
+            let guide = document.getElementById(guideId);
+            
+            if (!guide) {
+                guide = document.createElement('div');
+                guide.id = guideId;
+                guide.style.position = 'absolute';
+                guide.style.background = '#ff0066';
+                guide.style.pointerEvents = 'none';
+                guide.style.zIndex = '1000';
+                guide.style.opacity = '0.6';
+                
+                if (orientation === 'vertical') {
+                    guide.style.width = '1px';
+                    guide.style.height = (partHeight * scale) + 'px';
+                    guide.style.left = (partWidth / 2 * scale) + 'px';
+                    guide.style.top = '0';
+                } else {
+                    guide.style.height = '1px';
+                    guide.style.width = (partWidth * scale) + 'px';
+                    guide.style.top = (partHeight / 2 * scale) + 'px';
+                    guide.style.left = '0';
+                }
+                
+                canvas.appendChild(guide);
+            }
+            
+            guide.style.display = 'block';
+        }
+        
+        function hideSnapGuide(orientation) {
+            const guideId = 'snapGuide' + orientation;
+            const guide = document.getElementById(guideId);
+            if (guide) {
+                guide.style.display = 'none';
+            }
+        }
+        
         function stopDrag() {
             draggedElement = null;
+            hideSnapGuide('vertical');
+            hideSnapGuide('horizontal');
             document.removeEventListener('mousemove', drag);
             document.removeEventListener('mouseup', stopDrag);
         }
