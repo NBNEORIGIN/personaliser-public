@@ -46,6 +46,7 @@ class ImageElement(BaseElement):
     fit: Literal["cover", "contain"] = Field(default="cover", description="How image fits in box")
     clip_shape: Optional[ClipShape] = Field(default=None, description="Optional clipping shape")
     frame_source: Optional[str] = Field(default=None, description="Optional frame/border SVG to overlay on top")
+    border_width_mm: Optional[float] = Field(default=1.5, description="Border/frame width in mm")
 
 
 class GraphicElement(BaseElement):

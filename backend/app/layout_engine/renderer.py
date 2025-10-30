@@ -17,7 +17,7 @@ from .utils import (
 )
 
 
-def generate_inline_frame(frame_type: str, width_mm: float, height_mm: float, radius_mm: float = 0) -> str:
+def generate_inline_frame(frame_type: str, width_mm: float, height_mm: float, radius_mm: float = 0, border_width_mm: float = None) -> str:
     """
     Generate inline SVG frame/border based on frame type.
     
@@ -26,6 +26,7 @@ def generate_inline_frame(frame_type: str, width_mm: float, height_mm: float, ra
         width_mm: Width in mm
         height_mm: Height in mm
         radius_mm: Corner radius in mm
+        border_width_mm: Border width in mm (overrides default)
         
     Returns:
         SVG markup string for the frame
@@ -37,6 +38,11 @@ def generate_inline_frame(frame_type: str, width_mm: float, height_mm: float, ra
         'simple-black': {'stroke': '#000000', 'stroke-width': '1', 'fill': 'none'},
         'ornate-gold': {'stroke': '#FFD700', 'stroke-width': '2', 'fill': 'none', 'ornate': True}
     }
+    
+    # Override stroke-width if border_width_mm provided
+    if border_width_mm is not None:
+        for style in frame_styles.values():
+            style['stroke-width'] = str(border_width_mm)
     
     style = frame_styles.get(frame_type, frame_styles['simple-gold'])
     
@@ -242,7 +248,8 @@ def render_image_element(
             # Check if it's a built-in frame type
             if element.frame_source in ['simple-gold', 'simple-silver', 'simple-black', 'ornate-gold']:
                 # Generate inline frame based on type
-                frame_svg = generate_inline_frame(element.frame_source, element.w_mm, element.h_mm, radius)
+                border_width = element.border_width_mm if hasattr(element, 'border_width_mm') else 1.5
+                frame_svg = generate_inline_frame(element.frame_source, element.w_mm, element.h_mm, radius, border_width)
                 # Wrap in group with transform to position correctly
                 positioned_frame = (
                     f'<g transform="translate({element.x_mm}, {element.y_mm})">'

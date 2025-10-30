@@ -2209,6 +2209,10 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                             <option value="ornate-gold" ${element.frame_source === 'ornate-gold' ? 'selected' : ''}>Ornate Gold</option>
                         </select>
                     </div>
+                    <div style="margin-bottom: 5px;">
+                        <label style="display: block; font-size: 11px; margin-bottom: 2px;">Border Width: <span id="borderWidthValue">${element.border_width_mm || 1.5}</span>mm</label>
+                        <input type="range" value="${element.border_width_mm || 1.5}" onchange="updateBorderWidth(this.value)" oninput="document.getElementById('borderWidthValue').textContent = this.value" style="width: 100%;" min="0.5" max="5" step="0.5">
+                    </div>
                 ` : ''}
                 <button onclick="deleteElement()" style="width: 100%; margin-top: 10px; background: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer;">🗑️ Delete Element</button>
             `;
@@ -2237,6 +2241,15 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             const element = templateElements[selectedElement];
             if (element.type === 'image') {
                 element.frame_source = value || null;
+                renderTemplateCanvas();
+            }
+        }
+        
+        function updateBorderWidth(value) {
+            if (selectedElement === null) return;
+            const element = templateElements[selectedElement];
+            if (element.type === 'image') {
+                element.border_width_mm = parseFloat(value);
                 renderTemplateCanvas();
             }
         }
@@ -2891,6 +2904,16 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 successIndicator.textContent = '✓';
                 groupElement.appendChild(successIndicator);
                 
+                // Add edit button
+                const editButton = document.createElement('button');
+                editButton.style.cssText = 'position: absolute; bottom: 5px; right: 5px; background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer; z-index: 10;';
+                editButton.textContent = '✏️ Edit';
+                editButton.onclick = (e) => {
+                    e.stopPropagation();
+                    showPhotoEditor(elementId, groupElement);
+                };
+                groupElement.appendChild(editButton);
+                
                 // Show success message
                 document.getElementById('status').innerHTML = '<div class="success">✅ Photo uploaded! Drop more photos or click "Generate SVG" to update.</div>';
                 
@@ -2900,6 +2923,76 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 const loadingOverlay = groupElement.querySelector('div');
                 if (loadingOverlay) loadingOverlay.remove();
             }
+        }
+        
+        function showPhotoEditor(elementId, groupElement) {
+            const photoData = photoDropTargets.get(elementId);
+            if (!photoData) return;
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+            
+            const panel = document.createElement('div');
+            panel.style.cssText = 'background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;';
+            
+            panel.innerHTML = `
+                <h3 style="margin-top: 0;">📸 Edit Photo</h3>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Scale: <span id="scaleValue">${photoData.scale || 1.0}</span>x</label>
+                    <input type="range" id="scaleSlider" value="${photoData.scale || 1.0}" min="0.5" max="3" step="0.1" style="width: 100%;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Horizontal Offset: <span id="offsetXValue">${photoData.offset_x_mm || 0}</span>mm</label>
+                    <input type="range" id="offsetXSlider" value="${photoData.offset_x_mm || 0}" min="-20" max="20" step="1" style="width: 100%;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Vertical Offset: <span id="offsetYValue">${photoData.offset_y_mm || 0}</span>mm</label>
+                    <input type="range" id="offsetYSlider" value="${photoData.offset_y_mm || 0}" min="-20" max="20" step="1" style="width: 100%;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="applyBtn" style="flex: 1; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">✓ Apply</button>
+                    <button id="cancelBtn" style="flex: 1; background: #95a5a6; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">✕ Cancel</button>
+                </div>
+            `;
+            
+            modal.appendChild(panel);
+            document.body.appendChild(modal);
+            
+            // Update values in real-time
+            const scaleSlider = panel.querySelector('#scaleSlider');
+            const offsetXSlider = panel.querySelector('#offsetXSlider');
+            const offsetYSlider = panel.querySelector('#offsetYSlider');
+            
+            scaleSlider.oninput = () => {
+                panel.querySelector('#scaleValue').textContent = scaleSlider.value;
+            };
+            offsetXSlider.oninput = () => {
+                panel.querySelector('#offsetXValue').textContent = offsetXSlider.value;
+            };
+            offsetYSlider.oninput = () => {
+                panel.querySelector('#offsetYValue').textContent = offsetYSlider.value;
+            };
+            
+            // Apply button
+            panel.querySelector('#applyBtn').onclick = () => {
+                photoData.scale = parseFloat(scaleSlider.value);
+                photoData.offset_x_mm = parseFloat(offsetXSlider.value);
+                photoData.offset_y_mm = parseFloat(offsetYSlider.value);
+                photoDropTargets.set(elementId, photoData);
+                modal.remove();
+                document.getElementById('status').innerHTML = '<div class="success">✅ Photo updated! Click "Generate SVG" to see changes.</div>';
+            };
+            
+            // Cancel button
+            panel.querySelector('#cancelBtn').onclick = () => {
+                modal.remove();
+            };
+            
+            // Click outside to close
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
         }
     </script>
 </body>
