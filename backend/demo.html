@@ -1002,28 +1002,80 @@
         
         // Removed - using the more complete generateSVG function below
         
-        function downloadSVG() {
-            const preview = document.getElementById('preview');
-            const svgElement = preview.querySelector('svg');
-            
-            if (!svgElement) {
-                alert('❌ Please generate SVG first');
-                return;
-            }
-            
-            const svgData = svgElement.outerHTML;
-            const blob = new Blob([svgData], { type: 'image/svg+xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'layout.svg';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
+        async function downloadSVG() {
             const status = document.getElementById('status');
-            status.innerHTML = '<div class="success">✅ SVG downloaded!</div>';
+            status.innerHTML = '<div class="loading">⏳ Generating SVG for download...</div>';
+            
+            try {
+                const template = buildTemplate();
+                
+                // Create content with uploaded photos
+                const totalSlots = template.tiling.cols * template.tiling.rows;
+                const slots = [];
+                for (let i = 0; i < totalSlots; i++) {
+                    const slotContent = {
+                        slot_index: i,
+                        nameLine: document.getElementById('name0')?.value || `Item ${i + 1}`,
+                        messageBlock: document.getElementById('message0')?.value || `Sample text ${i + 1}`,
+                        additionalText: `Line 3 - ${i + 1}`
+                    };
+                    
+                    // Add uploaded photos
+                    template.part.elements.forEach(el => {
+                        if (el.type === 'image') {
+                            const row = Math.floor(i / template.tiling.cols);
+                            const col = i % template.tiling.cols;
+                            const photoKey = `r${row}-c${col}-${el.id}`;
+                            const uploadedPhoto = photoDropTargets.get(photoKey);
+                            
+                            if (uploadedPhoto) {
+                                const photoDataForBackend = {
+                                    file_url: uploadedPhoto.file_url.replace(window.location.origin, ''),
+                                    scale: uploadedPhoto.scale,
+                                    offset_x_mm: uploadedPhoto.offset_x_mm,
+                                    offset_y_mm: uploadedPhoto.offset_y_mm
+                                };
+                                slotContent[el.id] = photoDataForBackend;
+                            } else {
+                                slotContent[el.id] = null;
+                            }
+                        }
+                    });
+                    
+                    slots.push(slotContent);
+                }
+                
+                const content = { slots };
+                
+                const response = await fetch(`${API_BASE}/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ template, content, format: 'svg' })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to generate SVG');
+                }
+                
+                const data = await response.json();
+                const svgContent = data.svg || data;
+                
+                // Download the SVG
+                const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'layout.svg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                status.innerHTML = '<div class="success">✅ SVG downloaded with photos!</div>';
+                
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
         }
         
         async function downloadPDF() {
