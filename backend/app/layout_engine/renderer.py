@@ -224,23 +224,46 @@ def render_image_element(
         if scale != 1.0:
             transform_parts.append(f'translate({center_x}, {center_y}) scale({scale}) translate({-center_x}, {-center_y})')
     
-    transform_attr = f' transform="{" ".join(transform_parts)}"' if transform_parts else ''
-    
-    # Render image
-    image_attrs = [
-        f'id="{element_id}"',
-        f'x="{element.x_mm}"',
-        f'y="{element.y_mm}"',
-        f'width="{element.w_mm}"',
-        f'height="{element.h_mm}"',
-        f'href="{escape_xml(image_path)}"',
-        'preserveAspectRatio="xMidYMid slice"' if element.fit == "cover" else 'preserveAspectRatio="xMidYMid meet"'
-    ]
-    
-    if clip_path_id:
-        image_attrs.append(f'clip-path="url(#{clip_path_id})"')
-    
-    svg_parts.append(f'<image {" ".join(image_attrs)}{transform_attr} />')
+    # If we have transforms, wrap image in a group with clip-path applied to the group
+    if transform_parts:
+        transform_attr = f' transform="{" ".join(transform_parts)}"'
+        
+        # Start a clipped group
+        if clip_path_id:
+            svg_parts.append(f'<g clip-path="url(#{clip_path_id})">')
+        
+        # Render image with transform but no clip-path (clip is on parent group)
+        image_attrs = [
+            f'id="{element_id}"',
+            f'x="{element.x_mm}"',
+            f'y="{element.y_mm}"',
+            f'width="{element.w_mm}"',
+            f'height="{element.h_mm}"',
+            f'href="{escape_xml(image_path)}"',
+            'preserveAspectRatio="xMidYMid slice"' if element.fit == "cover" else 'preserveAspectRatio="xMidYMid meet"'
+        ]
+        
+        svg_parts.append(f'<image {" ".join(image_attrs)}{transform_attr} />')
+        
+        # Close clipped group
+        if clip_path_id:
+            svg_parts.append('</g>')
+    else:
+        # No transforms, render normally with clip-path on image
+        image_attrs = [
+            f'id="{element_id}"',
+            f'x="{element.x_mm}"',
+            f'y="{element.y_mm}"',
+            f'width="{element.w_mm}"',
+            f'height="{element.h_mm}"',
+            f'href="{escape_xml(image_path)}"',
+            'preserveAspectRatio="xMidYMid slice"' if element.fit == "cover" else 'preserveAspectRatio="xMidYMid meet"'
+        ]
+        
+        if clip_path_id:
+            image_attrs.append(f'clip-path="url(#{clip_path_id})"')
+        
+        svg_parts.append(f'<image {" ".join(image_attrs)} />')
     
     # Render frame overlay if specified
     if element.frame_source:
