@@ -17,6 +17,50 @@ from .utils import (
 )
 
 
+def generate_inline_frame(frame_type: str, width_mm: float, height_mm: float, radius_mm: float = 0) -> str:
+    """
+    Generate inline SVG frame/border based on frame type.
+    
+    Args:
+        frame_type: Type of frame ('simple-gold', 'simple-silver', 'simple-black', 'ornate-gold')
+        width_mm: Width in mm
+        height_mm: Height in mm
+        radius_mm: Corner radius in mm
+        
+    Returns:
+        SVG markup string for the frame
+    """
+    # Color and style mapping
+    frame_styles = {
+        'simple-gold': {'stroke': '#FFD700', 'stroke-width': '1.5', 'fill': 'none'},
+        'simple-silver': {'stroke': '#C0C0C0', 'stroke-width': '1.5', 'fill': 'none'},
+        'simple-black': {'stroke': '#000000', 'stroke-width': '1', 'fill': 'none'},
+        'ornate-gold': {'stroke': '#FFD700', 'stroke-width': '2', 'fill': 'none', 'ornate': True}
+    }
+    
+    style = frame_styles.get(frame_type, frame_styles['simple-gold'])
+    
+    if style.get('ornate'):
+        # Ornate frame with double border
+        return (
+            f'<g id="frame">'
+            f'<rect x="0" y="0" width="{width_mm}" height="{height_mm}" '
+            f'rx="{radius_mm}" ry="{radius_mm}" '
+            f'fill="none" stroke="{style["stroke"]}" stroke-width="{style["stroke-width"]}" />'
+            f'<rect x="2" y="2" width="{width_mm-4}" height="{height_mm-4}" '
+            f'rx="{max(0, radius_mm-2)}" ry="{max(0, radius_mm-2)}" '
+            f'fill="none" stroke="{style["stroke"]}" stroke-width="0.5" opacity="0.6" />'
+            f'</g>'
+        )
+    else:
+        # Simple border
+        return (
+            f'<rect id="frame" x="0" y="0" width="{width_mm}" height="{height_mm}" '
+            f'rx="{radius_mm}" ry="{radius_mm}" '
+            f'fill="{style["fill"]}" stroke="{style["stroke"]}" stroke-width="{style["stroke-width"]}" />'
+        )
+
+
 def render_text_element(
     element: TextElement,
     content: str,
@@ -196,28 +240,47 @@ def render_image_element(
     # Render frame overlay if specified
     if element.frame_source:
         frame_id = generate_unique_id("frame", row, col, element.id)
+        radius = element.clip_shape.radius_mm if element.clip_shape else 0
+        
         try:
-            # Load frame SVG file
-            frame_path = Path(element.frame_source.lstrip('/'))
-            if frame_path.exists():
-                frame_svg = frame_path.read_text()
-                # Embed frame as nested SVG with proper positioning and sizing
-                svg_parts.append(
-                    f'<svg id="{frame_id}" '
-                    f'x="{element.x_mm}" y="{element.y_mm}" '
-                    f'width="{element.w_mm}" height="{element.h_mm}" '
-                    f'viewBox="0 0 100 100" preserveAspectRatio="none">'
-                    f'{frame_svg}'
-                    f'</svg>'
+            # Check if it's a built-in frame type
+            if element.frame_source in ['simple-gold', 'simple-silver', 'simple-black', 'ornate-gold']:
+                # Generate inline frame based on type
+                frame_svg = generate_inline_frame(element.frame_source, element.w_mm, element.h_mm, radius)
+                # Wrap in group with transform to position correctly
+                positioned_frame = (
+                    f'<g transform="translate({element.x_mm}, {element.y_mm})">'
+                    f'{frame_svg.replace("id=\"frame\"", f"id=\"{frame_id}\"")}'
+                    f'</g>'
                 )
+                svg_parts.append(positioned_frame)
             else:
-                # Fallback to simple border
-                svg_parts.append(
-                    f'<rect id="{frame_id}" '
-                    f'x="{element.x_mm}" y="{element.y_mm}" '
-                    f'width="{element.w_mm}" height="{element.h_mm}" '
-                    f'fill="none" stroke="gold" stroke-width="2" rx="2" />'
-                )
+                # Try to load from file
+                frame_path = Path(element.frame_source.lstrip('/'))
+                if not frame_path.is_absolute():
+                    from ..settings import settings
+                    assets_dir = Path(settings.ASSETS_DIR) if hasattr(settings, 'ASSETS_DIR') else Path('assets')
+                    frame_path = assets_dir / element.frame_source
+                
+                if frame_path.exists():
+                    frame_svg = frame_path.read_text()
+                    # Embed frame as nested SVG with proper positioning and sizing
+                    svg_parts.append(
+                        f'<svg id="{frame_id}" '
+                        f'x="{element.x_mm}" y="{element.y_mm}" '
+                        f'width="{element.w_mm}" height="{element.h_mm}" '
+                        f'viewBox="0 0 100 100" preserveAspectRatio="none">'
+                        f'{frame_svg}'
+                        f'</svg>'
+                    )
+                else:
+                    # Fallback to simple border
+                    svg_parts.append(
+                        f'<rect id="{frame_id}" '
+                        f'x="{element.x_mm}" y="{element.y_mm}" '
+                        f'width="{element.w_mm}" height="{element.h_mm}" '
+                        f'fill="none" stroke="gold" stroke-width="1" rx="{radius}" />'
+                    )
         except Exception as e:
             # Fallback on error
             svg_parts.append(
@@ -225,7 +288,7 @@ def render_image_element(
                 f'<rect id="{frame_id}" '
                 f'x="{element.x_mm}" y="{element.y_mm}" '
                 f'width="{element.w_mm}" height="{element.h_mm}" '
-                f'fill="none" stroke="gold" stroke-width="2" rx="2" />'
+                f'fill="none" stroke="gold" stroke-width="1" rx="{radius}" />'
             )
     
     svg_parts.append('</g>')

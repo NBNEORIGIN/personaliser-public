@@ -1884,6 +1884,11 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                     el.style.background = element.type === 'text' ? 'rgba(102, 126, 234, 0.1)' : 
                                          element.type === 'image' ? 'rgba(52, 152, 219, 0.1)' : 
                                          'rgba(46, 204, 113, 0.1)';
+                    
+                    // Apply rounded corners for images with clip_shape
+                    if (element.type === 'image' && element.clip_shape && element.clip_shape.radius_mm > 0) {
+                        el.style.borderRadius = (element.clip_shape.radius_mm * scale) + 'px';
+                    }
                 }
                 el.dataset.index = index;
                 
@@ -1895,6 +1900,25 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                                        element.type === 'image' ? '📸 ' + element.id : 
                                        '🎨 ' + element.id;
                     el.appendChild(label);
+                    
+                    // Show frame indicator for images with borders
+                    if (element.type === 'image' && element.frame_source) {
+                        const frameIndicator = document.createElement('div');
+                        frameIndicator.style.cssText = 'position: absolute; inset: 0; border: 3px solid; pointer-events: none; border-radius: ' + ((element.clip_shape?.radius_mm || 0) * scale) + 'px;';
+                        
+                        // Color based on frame type
+                        if (element.frame_source.includes('gold')) {
+                            frameIndicator.style.borderColor = '#FFD700';
+                        } else if (element.frame_source.includes('silver')) {
+                            frameIndicator.style.borderColor = '#C0C0C0';
+                        } else if (element.frame_source.includes('black')) {
+                            frameIndicator.style.borderColor = '#000000';
+                        } else {
+                            frameIndicator.style.borderColor = '#8B4513';
+                        }
+                        
+                        el.appendChild(frameIndicator);
+                    }
                     
                     // Add resize handles (4 corners)
                     const handlePositions = [
@@ -2161,6 +2185,22 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                         <input type="number" value="${element.font_size_pt}" onchange="updateElementProperty('font_size_pt', this.value)" style="width: 100%; padding: 4px;">
                     </div>
                 ` : ''}
+                ${element.type === 'image' ? `
+                    <div style="margin-bottom: 5px;">
+                        <label style="display: block; font-size: 11px; margin-bottom: 2px;">Corner Radius (mm)</label>
+                        <input type="number" value="${element.clip_shape?.radius_mm || 0}" onchange="updateImageRadius(this.value)" style="width: 100%; padding: 4px;" min="0">
+                    </div>
+                    <div style="margin-bottom: 5px;">
+                        <label style="display: block; font-size: 11px; margin-bottom: 2px;">Border/Frame</label>
+                        <select onchange="updateImageFrame(this.value)" style="width: 100%; padding: 4px;">
+                            <option value="" ${!element.frame_source ? 'selected' : ''}>No Border</option>
+                            <option value="simple-gold" ${element.frame_source === 'simple-gold' ? 'selected' : ''}>Gold Border</option>
+                            <option value="simple-silver" ${element.frame_source === 'simple-silver' ? 'selected' : ''}>Silver Border</option>
+                            <option value="simple-black" ${element.frame_source === 'simple-black' ? 'selected' : ''}>Black Border</option>
+                            <option value="ornate-gold" ${element.frame_source === 'ornate-gold' ? 'selected' : ''}>Ornate Gold</option>
+                        </select>
+                    </div>
+                ` : ''}
                 <button onclick="deleteElement()" style="width: 100%; margin-top: 10px; background: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer;">🗑️ Delete Element</button>
             `;
         }
@@ -2169,6 +2209,27 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             if (selectedElement === null) return;
             templateElements[selectedElement][prop] = parseFloat(value);
             renderTemplateCanvas();
+        }
+        
+        function updateImageRadius(value) {
+            if (selectedElement === null) return;
+            const element = templateElements[selectedElement];
+            if (element.type === 'image') {
+                if (!element.clip_shape) {
+                    element.clip_shape = { kind: 'rounded_rect', radius_mm: 0 };
+                }
+                element.clip_shape.radius_mm = parseFloat(value) || 0;
+                renderTemplateCanvas();
+            }
+        }
+        
+        function updateImageFrame(value) {
+            if (selectedElement === null) return;
+            const element = templateElements[selectedElement];
+            if (element.type === 'image') {
+                element.frame_source = value || null;
+                renderTemplateCanvas();
+            }
         }
         
         function addElement(type) {
@@ -2193,6 +2254,7 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             } else if (type === 'image') {
                 newElement.fit = 'cover';
                 newElement.clip_shape = { kind: 'rounded_rect', radius_mm: 4 };
+                newElement.frame_source = null;
             } else if (type === 'graphic') {
                 newElement.source = '';
             }
