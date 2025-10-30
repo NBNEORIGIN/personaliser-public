@@ -1058,7 +1058,12 @@
                 }
                 
                 const data = await response.json();
-                const svgContent = data.svg || data;
+                let svgContent = data.svg || data;
+                
+                // Convert relative photo URLs to absolute URLs so SVG works when downloaded
+                const baseUrl = window.location.origin;
+                svgContent = svgContent.replace(/href="\/static\/photos\//g, `href="${baseUrl}/static/photos/`);
+                svgContent = svgContent.replace(/xlink:href="\/static\/photos\//g, `xlink:href="${baseUrl}/static/photos/`);
                 
                 // Download the SVG
                 const blob = new Blob([svgContent], { type: 'image/svg+xml' });
