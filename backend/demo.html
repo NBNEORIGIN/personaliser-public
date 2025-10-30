@@ -2683,7 +2683,19 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                     // Add placeholder for any image elements in template
                     template.part.elements.forEach(el => {
                         if (el.type === 'image') {
-                            slotContent[el.id] = null; // null will render as placeholder
+                            // Check if user uploaded a photo for this slot
+                            const row = Math.floor(i / template.tiling.cols);
+                            const col = i % template.tiling.cols;
+                            const photoKey = `tile-r${row}-c${col}-${el.id}`;
+                            const uploadedPhoto = photoDropTargets.get(photoKey);
+                            
+                            if (uploadedPhoto) {
+                                // Use uploaded photo
+                                slotContent[el.id] = uploadedPhoto;
+                            } else {
+                                // Use placeholder
+                                slotContent[el.id] = null;
+                            }
                         }
                     });
                     
