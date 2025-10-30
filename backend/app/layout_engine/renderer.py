@@ -175,8 +175,11 @@ def render_image_element(
         scale = content.get('scale', 1.0)
         offset_x_mm = content.get('offset_x_mm', 0.0)
         offset_y_mm = content.get('offset_y_mm', 0.0)
+        print(f"[IMAGE] Dict content: {content}", flush=True)
+        print(f"[IMAGE] Extracted path: {image_path}, scale: {scale}, offset: ({offset_x_mm}, {offset_y_mm})", flush=True)
     elif isinstance(content, str):
         image_path = content
+        print(f"[IMAGE] String content: {image_path}", flush=True)
     
     # Always create image element (even if no photo) for drag & drop
     svg_parts = []
