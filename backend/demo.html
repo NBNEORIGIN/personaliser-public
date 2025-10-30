@@ -612,60 +612,28 @@
                 </div>
                 
                 <div class="section">
-                    <h3>Bed Configuration <span style="font-size: 12px; font-weight: normal; color: #666;">ℹ️ Print bed size</span></h3>
-                    <div class="grid-inputs">
-                        <div class="input-group">
-                            <label>Width (mm)</label>
-                            <input type="number" id="bedWidth" value="480">
-                        </div>
-                        <div class="input-group">
-                            <label>Height (mm)</label>
-                            <input type="number" id="bedHeight" value="330">
-                        </div>
-                    </div>
-                    <button class="btn btn-secondary" onclick="openBedConfigurator()" style="margin-top: 10px;">
+                    <h3>Bed & Part Configuration</h3>
+                    <button class="btn" onclick="openBedConfigurator()" style="width: 100%; margin-bottom: 10px;">
                         🎨 Visual Bed & Tiling Setup
                     </button>
-                </div>
-                
-                <div class="section">
-                    <h3>Part Configuration <span style="font-size: 12px; font-weight: normal; color: #666;">ℹ️ Individual item size</span></h3>
-                    <div class="grid-inputs">
-                        <div class="input-group">
-                            <label>Width (mm)</label>
-                            <input type="number" id="partWidth" value="140" onchange="updateTemplateEditor()">
-                        </div>
-                        <div class="input-group">
-                            <label>Height (mm)</label>
-                            <input type="number" id="partHeight" value="90" onchange="updateTemplateEditor()">
-                        </div>
-                    </div>
-                    <button class="btn btn-secondary" onclick="openTemplateEditor()" style="margin-top: 10px;">
+                    <button class="btn btn-secondary" onclick="openTemplateEditor()" style="width: 100%;">
                         🎨 Visual Template Editor
                     </button>
+                    
+                    <!-- Hidden inputs for backend -->
+                    <input type="hidden" id="bedWidth" value="480">
+                    <input type="hidden" id="bedHeight" value="330">
+                    <input type="hidden" id="partWidth" value="140">
+                    <input type="hidden" id="partHeight" value="90">
                 </div>
                 
-                <div class="section">
-                    <h3>Tiling</h3>
-                    <div class="grid-inputs">
-                        <div class="input-group">
-                            <label>Columns</label>
-                            <input type="number" id="cols" value="3" min="1" max="10">
-                        </div>
-                        <div class="input-group">
-                            <label>Rows</label>
-                            <input type="number" id="rows" value="3" min="1" max="10">
-                        </div>
-                        <div class="input-group">
-                            <label>Gap X (mm)</label>
-                            <input type="number" id="gapX" value="5">
-                        </div>
-                        <div class="input-group">
-                            <label>Gap Y (mm)</label>
-                            <input type="number" id="gapY" value="5">
-                        </div>
-                    </div>
-                </div>
+                <!-- Hidden tiling inputs for backend -->
+                <input type="hidden" id="cols" value="3">
+                <input type="hidden" id="rows" value="3">
+                <input type="hidden" id="gapX" value="5">
+                <input type="hidden" id="gapY" value="5">
+                <input type="hidden" id="offsetX" value="0">
+                <input type="hidden" id="offsetY" value="0">
                 
                 <div class="section">
                     <h3>Content - Slot 0</h3>
@@ -1057,8 +1025,8 @@
                     rows: parseInt(document.getElementById('rows').value),
                     gap_x_mm: parseFloat(document.getElementById('gapX').value),
                     gap_y_mm: parseFloat(document.getElementById('gapY').value),
-                    offset_x_mm: 0,
-                    offset_y_mm: 0
+                    offset_x_mm: parseFloat(document.getElementById('offsetX').value) || 0,
+                    offset_y_mm: parseFloat(document.getElementById('offsetY').value) || 0
                 }
             };
         }
@@ -2545,8 +2513,33 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             document.getElementById('cols').value = cols;
             document.getElementById('rows').value = rows;
             
+            // Calculate and save offset based on alignment
+            const alignment = document.querySelector('input[name="alignment"]:checked').value;
+            const gridWidth = cols * partWidth + (cols - 1) * gapX;
+            const gridHeight = rows * partHeight + (rows - 1) * gapY;
+            
+            let offsetX = 0;
+            let offsetY = 0;
+            
+            // Horizontal alignment
+            if (alignment === 'center' || alignment === 'top-center' || alignment === 'bottom-center') {
+                offsetX = (bedWidth - gridWidth) / 2;
+            } else if (alignment.endsWith('-right')) {
+                offsetX = bedWidth - gridWidth;
+            }
+            
+            // Vertical alignment
+            if (alignment === 'center' || alignment === 'middle-left' || alignment === 'middle-right') {
+                offsetY = (bedHeight - gridHeight) / 2;
+            } else if (alignment.startsWith('bottom-')) {
+                offsetY = bedHeight - gridHeight;
+            }
+            
+            document.getElementById('offsetX').value = offsetX;
+            document.getElementById('offsetY').value = offsetY;
+            
             closeBedConfigurator();
-            alert(`✅ Configuration applied!\n\nBed: ${bedWidth}×${bedHeight}mm\nPart: ${partWidth}×${partHeight}mm (${shape})\nCapacity: ${cols}×${rows} = ${cols*rows} parts`);
+            alert(`✅ Configuration applied!\n\nBed: ${bedWidth}×${bedHeight}mm\nPart: ${partWidth}×${partHeight}mm (${shape})\nAlignment: ${alignment}\nCapacity: ${cols}×${rows} = ${cols*rows} parts`);
         }
         
         async function generateSVG() {
