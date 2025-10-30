@@ -2689,6 +2689,9 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 const svgContent = data.svg || data;
                 document.getElementById('preview').innerHTML = svgContent;
                 
+                // Enable drag & drop for photo placeholders
+                enablePhotoDragDrop();
+                
                 // Update stats
                 const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
                 document.getElementById('statsItems').textContent = totalSlots;
@@ -2699,6 +2702,148 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 
             } catch (error) {
                 status.innerHTML = `<div class="error">❌ Error: ${error.message}<br><small>Please check your inputs and try again.</small></div>`;
+            }
+        }
+        
+        // Photo drag & drop functionality
+        let photoDropTargets = new Map(); // Map of element ID to photo data
+        
+        function enablePhotoDragDrop() {
+            const preview = document.getElementById('preview');
+            const svg = preview.querySelector('svg');
+            if (!svg) return;
+            
+            // Find all image elements in the SVG
+            const imageElements = svg.querySelectorAll('image');
+            
+            imageElements.forEach(img => {
+                const parentGroup = img.closest('g[id^="image-group"]');
+                if (!parentGroup) return;
+                
+                // Make the group accept drops
+                parentGroup.style.cursor = 'pointer';
+                parentGroup.setAttribute('data-droppable', 'true');
+                
+                // Add visual hover effect
+                parentGroup.addEventListener('mouseenter', function() {
+                    this.style.opacity = '0.8';
+                    this.style.filter = 'brightness(1.1)';
+                });
+                
+                parentGroup.addEventListener('mouseleave', function() {
+                    this.style.opacity = '1';
+                    this.style.filter = 'none';
+                });
+                
+                // Handle drag over
+                parentGroup.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.outline = '3px dashed #667eea';
+                    this.style.outlineOffset = '2px';
+                });
+                
+                parentGroup.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.style.outline = 'none';
+                });
+                
+                // Handle drop
+                parentGroup.addEventListener('drop', async function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.outline = 'none';
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0 && files[0].type.startsWith('image/')) {
+                        await handlePhotoDropOnElement(files[0], this, img);
+                    }
+                });
+                
+                // Handle click to upload
+                parentGroup.addEventListener('click', function() {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = async (e) => {
+                        if (e.target.files.length > 0) {
+                            await handlePhotoDropOnElement(e.target.files[0], parentGroup, img);
+                        }
+                    };
+                    input.click();
+                });
+            });
+            
+            // Also enable drag & drop on the whole preview area
+            preview.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            });
+            
+            preview.addEventListener('drop', function(e) {
+                e.preventDefault();
+                // If dropped on preview but not on specific element, show message
+                const target = e.target.closest('[data-droppable="true"]');
+                if (!target) {
+                    alert('💡 Please drop photos directly onto the photo placeholders (blue rectangles)');
+                }
+            });
+        }
+        
+        async function handlePhotoDropOnElement(file, groupElement, imageElement) {
+            try {
+                // Show loading indicator
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.style.cssText = 'position: absolute; inset: 0; background: rgba(0,0,0,0.7); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; pointer-events: none;';
+                loadingOverlay.textContent = '⏳ Loading...';
+                groupElement.appendChild(loadingOverlay);
+                
+                // Upload photo to server
+                const formData = new FormData();
+                formData.append('photo', file);
+                
+                const response = await fetch(`${API_BASE}/upload-photo`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+                
+                const data = await response.json();
+                const photoUrl = data.url || data.file_url;
+                
+                // Update the image element
+                imageElement.setAttribute('href', photoUrl);
+                imageElement.setAttribute('data-photo-uploaded', 'true');
+                
+                // Store photo data for regeneration
+                const elementId = groupElement.id.replace('image-group-', '');
+                photoDropTargets.set(elementId, {
+                    file_url: photoUrl,
+                    scale: 1.0,
+                    offset_x_mm: 0,
+                    offset_y_mm: 0
+                });
+                
+                // Remove loading overlay
+                loadingOverlay.remove();
+                
+                // Add success indicator
+                const successIndicator = document.createElement('div');
+                successIndicator.style.cssText = 'position: absolute; top: 5px; right: 5px; background: #4CAF50; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; pointer-events: none;';
+                successIndicator.textContent = '✓';
+                groupElement.appendChild(successIndicator);
+                
+                // Show success message
+                document.getElementById('status').innerHTML = '<div class="success">✅ Photo uploaded! Drop more photos or click "Generate SVG" to update.</div>';
+                
+            } catch (error) {
+                console.error('Photo upload error:', error);
+                alert('❌ Failed to upload photo. Please try again.');
+                const loadingOverlay = groupElement.querySelector('div');
+                if (loadingOverlay) loadingOverlay.remove();
             }
         }
     </script>
