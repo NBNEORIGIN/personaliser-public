@@ -277,6 +277,74 @@
         <div class="header">
             <h1>🎨 Template Layout Engine</h1>
             <p>Interactive Demo - Generate Custom Print Plates</p>
+            <div id="userInfo" style="position: absolute; top: 20px; right: 20px; font-size: 14px; display: none;">
+                <span id="username"></span> | <a href="#" onclick="logout()" style="color: white;">Logout</a>
+            </div>
+        </div>
+        
+        <!-- Login/Register Modal -->
+        <div id="authModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 40px; border-radius: 12px; max-width: 400px; width: 90%;">
+                <h2 id="authTitle" style="margin-bottom: 20px;">Login</h2>
+                <div id="authForm">
+                    <div id="emailField" style="display: none; margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Email</label>
+                        <input type="email" id="authEmail" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Username</label>
+                        <input type="text" id="authUsername" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px;">Password</label>
+                        <input type="password" id="authPassword" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <button onclick="submitAuth()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-bottom: 10px;">
+                        <span id="authButton">Login</span>
+                    </button>
+                    <div style="text-align: center;">
+                        <a href="#" onclick="toggleAuthMode()" id="authToggle" style="color: #667eea;">Need an account? Register</a>
+                    </div>
+                </div>
+                <div id="authError" style="color: red; margin-top: 10px; display: none;"></div>
+            </div>
+        </div>
+        
+        <!-- Graphics Library Panel -->
+        <div id="graphicsPanel" style="display: none; padding: 20px; background: #f8f9fa; border-bottom: 2px solid #ddd;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">📁 My Graphics Library</h3>
+                <button onclick="toggleGraphicsPanel()" style="background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Close</button>
+            </div>
+            
+            <!-- Upload Zone -->
+            <div id="uploadZone" style="border: 2px dashed #667eea; border-radius: 8px; padding: 40px; text-align: center; background: white; margin-bottom: 20px; cursor: pointer;" 
+                 ondrop="handleGraphicDrop(event)" 
+                 ondragover="event.preventDefault(); this.style.background='#f0f0ff';" 
+                 ondragleave="this.style.background='white';"
+                 onclick="document.getElementById('graphicFileInput').click()">
+                <div style="font-size: 48px; margin-bottom: 10px;">📤</div>
+                <div style="font-size: 16px; color: #667eea; margin-bottom: 5px;">Drag & Drop Graphics Here</div>
+                <div style="font-size: 14px; color: #666;">or click to browse</div>
+                <div style="font-size: 12px; color: #999; margin-top: 10px;">PNG, JPG, SVG (max 5MB)</div>
+                <input type="file" id="graphicFileInput" accept=".png,.jpg,.jpeg,.svg" multiple style="display: none;" onchange="uploadGraphics(this.files)">
+            </div>
+            
+            <!-- Graphics Grid -->
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin-bottom: 10px;">Your Graphics (<span id="graphicsCount">0</span>/100)</h4>
+                <div id="graphicsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto;">
+                    <!-- Graphics will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Public Library -->
+            <div>
+                <h4 style="margin-bottom: 10px;">Public Library</h4>
+                <div id="publicGraphicsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; max-height: 200px; overflow-y: auto;">
+                    <!-- Public graphics will be loaded here -->
+                </div>
+            </div>
         </div>
         
         <!-- Menu Bar -->
@@ -306,6 +374,12 @@
                     <div onclick="zoomPreview(0.8)">🔍 Zoom Out</div>
                     <div onclick="zoomPreview(1)">⊡ Fit to Screen</div>
                 </div>
+            </div>
+            <div class="menu-item" style="position: relative;">
+                <span onclick="showAuthModal()" style="cursor: pointer; padding: 5px 10px;" id="authMenuBtn">👤 Login</span>
+            </div>
+            <div class="menu-item" style="position: relative; display: none;" id="graphicsMenuBtn">
+                <span onclick="toggleGraphicsPanel()" style="cursor: pointer; padding: 5px 10px;">🖼️ Graphics</span>
             </div>
             <div class="menu-item" style="position: relative;">
                 <span onclick="toggleMenu('helpMenu')" style="cursor: pointer; padding: 5px 10px;">❓ Help</span>
@@ -660,6 +734,283 @@
     <script>
         // Auto-detect API base URL (works locally and on Render)
         const API_BASE = window.location.origin + '/api/layout';
+        
+        // ========== AUTHENTICATION & GRAPHICS MANAGEMENT ==========
+        
+        let currentUser = null;
+        let isRegisterMode = false;
+        let userGraphics = [];
+        let publicGraphics = [];
+        
+        // Check if user is logged in on page load
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    currentUser = await response.json();
+                    updateAuthUI();
+                    loadGraphics();
+                }
+            } catch (error) {
+                console.log('Not logged in');
+            }
+        }
+        
+        function updateAuthUI() {
+            if (currentUser) {
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('username').textContent = currentUser.username;
+                document.getElementById('authMenuBtn').textContent = '👤 ' + currentUser.username;
+                document.getElementById('graphicsMenuBtn').style.display = 'block';
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+                document.getElementById('authMenuBtn').textContent = '👤 Login';
+                document.getElementById('graphicsMenuBtn').style.display = 'none';
+            }
+        }
+        
+        function showAuthModal() {
+            if (currentUser) {
+                // Already logged in, show user menu
+                alert(`Logged in as ${currentUser.username}`);
+                return;
+            }
+            document.getElementById('authModal').style.display = 'flex';
+            isRegisterMode = false;
+            updateAuthForm();
+        }
+        
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            updateAuthForm();
+            return false;
+        }
+        
+        function updateAuthForm() {
+            if (isRegisterMode) {
+                document.getElementById('authTitle').textContent = 'Register';
+                document.getElementById('authButton').textContent = 'Register';
+                document.getElementById('authToggle').textContent = 'Already have an account? Login';
+                document.getElementById('emailField').style.display = 'block';
+            } else {
+                document.getElementById('authTitle').textContent = 'Login';
+                document.getElementById('authButton').textContent = 'Login';
+                document.getElementById('authToggle').textContent = 'Need an account? Register';
+                document.getElementById('emailField').style.display = 'none';
+            }
+            document.getElementById('authError').style.display = 'none';
+        }
+        
+        async function submitAuth() {
+            const username = document.getElementById('authUsername').value;
+            const password = document.getElementById('authPassword').value;
+            const email = document.getElementById('authEmail').value;
+            
+            if (!username || !password) {
+                showAuthError('Please fill in all fields');
+                return;
+            }
+            
+            if (isRegisterMode && !email) {
+                showAuthError('Please enter your email');
+                return;
+            }
+            
+            try {
+                const endpoint = isRegisterMode ? '/api/auth/register' : '/api/auth/login';
+                const body = isRegisterMode 
+                    ? { username, email, password }
+                    : { username, password };
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(body)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = isRegisterMode ? data : data.user;
+                    document.getElementById('authModal').style.display = 'none';
+                    updateAuthUI();
+                    loadGraphics();
+                    alert(isRegisterMode ? 'Registration successful!' : 'Login successful!');
+                } else {
+                    const error = await response.json();
+                    showAuthError(error.detail || 'Authentication failed');
+                }
+            } catch (error) {
+                showAuthError('Network error: ' + error.message);
+            }
+        }
+        
+        function showAuthError(message) {
+            const errorDiv = document.getElementById('authError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            currentUser = null;
+            userGraphics = [];
+            updateAuthUI();
+            document.getElementById('graphicsPanel').style.display = 'none';
+            alert('Logged out successfully');
+        }
+        
+        // ========== GRAPHICS MANAGEMENT ==========
+        
+        function toggleGraphicsPanel() {
+            const panel = document.getElementById('graphicsPanel');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                loadGraphics();
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+        
+        async function loadGraphics() {
+            if (!currentUser) return;
+            
+            try {
+                // Load user graphics
+                const userResponse = await fetch('/api/graphics/list', {
+                    credentials: 'include'
+                });
+                if (userResponse.ok) {
+                    userGraphics = await userResponse.json();
+                    renderGraphicsGrid();
+                }
+                
+                // Load public graphics
+                const publicResponse = await fetch('/api/graphics/public');
+                if (publicResponse.ok) {
+                    publicGraphics = await publicResponse.json();
+                    renderPublicGraphicsGrid();
+                }
+            } catch (error) {
+                console.error('Error loading graphics:', error);
+            }
+        }
+        
+        function renderGraphicsGrid() {
+            const grid = document.getElementById('graphicsGrid');
+            document.getElementById('graphicsCount').textContent = userGraphics.length;
+            
+            if (userGraphics.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">No graphics yet. Upload some!</div>';
+                return;
+            }
+            
+            grid.innerHTML = userGraphics.map(g => `
+                <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: white; position: relative;">
+                    <img src="${g.url}" style="width: 100%; height: 100px; object-fit: contain; margin-bottom: 5px;" alt="${g.filename}">
+                    <div style="font-size: 11px; color: #666; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${g.filename}">${g.filename}</div>
+                    <div style="font-size: 10px; color: #999;">${(g.file_size / 1024).toFixed(1)} KB</div>
+                    <button onclick="deleteGraphic(${g.id})" style="position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px;">×</button>
+                </div>
+            `).join('');
+        }
+        
+        function renderPublicGraphicsGrid() {
+            const grid = document.getElementById('publicGraphicsGrid');
+            
+            if (publicGraphics.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #999;">No public graphics available</div>';
+                return;
+            }
+            
+            grid.innerHTML = publicGraphics.map(g => `
+                <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: white;">
+                    <img src="${g.url}" style="width: 100%; height: 100px; object-fit: contain; margin-bottom: 5px;" alt="${g.filename}">
+                    <div style="font-size: 11px; color: #666; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${g.filename}">${g.filename}</div>
+                </div>
+            `).join('');
+        }
+        
+        function handleGraphicDrop(event) {
+            event.preventDefault();
+            event.currentTarget.style.background = 'white';
+            const files = event.dataTransfer.files;
+            uploadGraphics(files);
+        }
+        
+        async function uploadGraphics(files) {
+            if (!currentUser) {
+                alert('Please login first');
+                return;
+            }
+            
+            if (files.length === 0) return;
+            
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            
+            for (let file of files) {
+                if (file.size > maxSize) {
+                    alert(`${file.name} is too large (max 5MB)`);
+                    continue;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const response = await fetch('/api/graphics/upload', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`Uploaded: ${file.name}`);
+                    } else {
+                        const error = await response.json();
+                        alert(`Failed to upload ${file.name}: ${error.detail}`);
+                    }
+                } catch (error) {
+                    alert(`Error uploading ${file.name}: ${error.message}`);
+                }
+            }
+            
+            // Reload graphics
+            await loadGraphics();
+        }
+        
+        async function deleteGraphic(id) {
+            if (!confirm('Delete this graphic?')) return;
+            
+            try {
+                const response = await fetch(`/api/graphics/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    await loadGraphics();
+                } else {
+                    alert('Failed to delete graphic');
+                }
+            } catch (error) {
+                alert('Error deleting graphic: ' + error.message);
+            }
+        }
+        
+        // Check auth on page load
+        checkAuth();
+        
+        // ========== END AUTHENTICATION & GRAPHICS ==========
         
         // Bed management
         let beds = [
@@ -1640,6 +1991,11 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 formData.append('column_mapping', JSON.stringify(mapping));
                 formData.append('has_header', 'true');
                 formData.append('format', 'svg');
+                
+                // Add user_id if logged in (for graphics resolution)
+                if (currentUser) {
+                    formData.append('user_id', currentUser.id);
+                }
                 
                 const response = await fetch(`${API_BASE}/upload/csv`, {
                     method: 'POST',
