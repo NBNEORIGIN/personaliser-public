@@ -80,17 +80,25 @@ async def upload_graphic(
     # Sanitize filename
     safe_filename = "".join(c for c in file.filename if c.isalnum() or c in ".-_ ").strip()
     
-    # Check if filename already exists for this user
-    existing = db.query(Graphic).filter(
-        Graphic.user_id == user.id,
-        Graphic.filename == safe_filename
-    ).first()
-    
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Graphic '{safe_filename}' already exists. Please rename or delete the existing one."
-        )
+    # Check if filename already exists for this user, auto-rename if needed
+    original_filename = safe_filename
+    counter = 1
+    while True:
+        existing = db.query(Graphic).filter(
+            Graphic.user_id == user.id,
+            Graphic.filename == safe_filename
+        ).first()
+        
+        if not existing:
+            break
+        
+        # Add counter to filename
+        name_parts = original_filename.rsplit('.', 1)
+        if len(name_parts) == 2:
+            safe_filename = f"{name_parts[0]}_{counter}.{name_parts[1]}"
+        else:
+            safe_filename = f"{original_filename}_{counter}"
+        counter += 1
     
     # Save file
     file_path = user_graphics_dir / safe_filename
