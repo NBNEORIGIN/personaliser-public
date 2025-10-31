@@ -67,12 +67,6 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
             detail="Password must be at least 8 characters"
         )
     
-    # Truncate password to 72 bytes for bcrypt compatibility
-    # Check byte length and truncate if necessary
-    password_to_use = request.password
-    while len(password_to_use.encode('utf-8')) > 72:
-        password_to_use = password_to_use[:-1]
-    
     # Check if username exists
     existing_user = db.query(User).filter(User.username == request.username).first()
     if existing_user:
@@ -91,11 +85,13 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     
     # Create new user
     try:
+        print(f"[AUTH REGISTER] About to hash password for user: {request.username}", flush=True)
         user = User(
             username=request.username,
             email=request.email,
-            password_hash=hash_password(password_to_use)
+            password_hash=hash_password(request.password)
         )
+        print(f"[AUTH REGISTER] Password hashed successfully", flush=True)
         db.add(user)
         db.commit()
         db.refresh(user)
