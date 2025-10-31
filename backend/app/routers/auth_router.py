@@ -103,7 +103,9 @@ async def register(request: RegisterRequest, response: Response, db: Session = D
             value=session_token,
             httponly=True,
             max_age=60 * 60 * 24 * 7,  # 7 days
-            samesite="lax"
+            samesite="lax",
+            path="/",
+            secure=False  # Allow HTTP for development
         )
         
         print(f"[AUTH] New user registered and logged in: {user.username} ({user.email})", flush=True)
@@ -155,7 +157,9 @@ async def login(request: LoginRequest, response: Response, db: Session = Depends
         value=session_token,
         httponly=True,
         max_age=60 * 60 * 24 * 7,  # 7 days
-        samesite="lax"
+        samesite="lax",
+        path="/",
+        secure=False  # Allow HTTP for development
     )
     
     print(f"[AUTH] User logged in: {user.username}", flush=True)
