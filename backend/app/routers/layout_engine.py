@@ -373,33 +373,6 @@ async def upload_photo(file: UploadFile = File(...)):
         )
 
 
-    - List of available graphics with paths
-    """
-    try:
-        from pathlib import Path
-        
-        graphics_dir = Path("static/graphics")
-        if not graphics_dir.exists():
-            return {"graphics": []}
-        
-        graphics = []
-        for file_path in graphics_dir.iterdir():
-            if file_path.is_file():
-                graphics.append({
-                    "filename": file_path.name,
-                    "path": f"/static/graphics/{file_path.name}",
-                    "size": file_path.stat().st_size
-                })
-        
-        return {"graphics": graphics}
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to list graphics: {str(e)}"
-        )
-
-
 @router.get("/health")
 async def health_check():
     """Health check endpoint."""
