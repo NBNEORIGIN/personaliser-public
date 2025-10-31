@@ -956,10 +956,13 @@
             if (files.length === 0) return;
             
             const maxSize = 5 * 1024 * 1024; // 5MB
+            let successCount = 0;
+            let failCount = 0;
             
             for (let file of files) {
                 if (file.size > maxSize) {
                     alert(`${file.name} is too large (max 5MB)`);
+                    failCount++;
                     continue;
                 }
                 
@@ -975,17 +978,28 @@
                     
                     if (response.ok) {
                         console.log(`Uploaded: ${file.name}`);
+                        successCount++;
                     } else {
                         const error = await response.json();
                         alert(`Failed to upload ${file.name}: ${error.detail}`);
+                        failCount++;
                     }
                 } catch (error) {
                     alert(`Error uploading ${file.name}: ${error.message}`);
+                    failCount++;
                 }
             }
             
-            // Reload graphics
+            // Reload graphics and ensure panel is open
             await loadGraphics();
+            
+            // Make sure graphics panel is visible
+            document.getElementById('graphicsPanel').style.display = 'block';
+            
+            // Show success message
+            if (successCount > 0) {
+                alert(`Successfully uploaded ${successCount} graphic(s)!`);
+            }
         }
         
         async function deleteGraphic(id) {
