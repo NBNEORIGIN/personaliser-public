@@ -166,7 +166,8 @@ async def upload_csv(
     has_header: bool = Form(True),
     format: str = Form("svg"),
     page: Optional[int] = Form(None),
-    items_per_page: Optional[int] = Form(None)
+    items_per_page: Optional[int] = Form(None),
+    user_id: Optional[int] = Form(None)
 ):
     """
     Upload CSV file and generate layout with pagination support.
@@ -199,8 +200,8 @@ async def upload_csv(
             element_ids = [e.id for e in template_obj.part.elements]
             mapping = auto_detect_mapping(csv_data, element_ids, has_header)
         
-        # Parse CSV to content
-        content = parse_csv_to_content(csv_data, mapping, has_header)
+        # Parse CSV to content (pass user_id for graphics resolution)
+        content = parse_csv_to_content(csv_data, mapping, has_header, user_id)
         
         # Handle pagination if requested
         if page is not None and items_per_page is not None:

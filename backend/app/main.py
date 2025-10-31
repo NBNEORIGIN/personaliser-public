@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .settings import settings
-from .routers import catalog, ingest_amazon, jobs, assets, layout_engine, auth_router
+from .routers import catalog, ingest_amazon, jobs, assets, layout_engine, auth_router, graphics_router
 from .database import init_db
 from .utils import sku_map
 import shutil
@@ -31,6 +31,7 @@ app.include_router(jobs.router, prefix=settings.API_PREFIX)
 app.include_router(assets.router, prefix=settings.API_PREFIX)
 app.include_router(layout_engine.router)  # Layout engine (has its own prefix)
 app.include_router(auth_router.router)  # Authentication
+app.include_router(graphics_router.router)  # Graphics management
 
 # Static mounts for previews and jobs artifacts
 app.mount("/static/previews", StaticFiles(directory=settings.PREVIEWS_DIR), name="previews")
@@ -38,10 +39,30 @@ app.mount("/static/jobs", StaticFiles(directory=settings.JOBS_DIR), name="jobs")
 app.mount("/static/uploads", StaticFiles(directory=settings.UPLOADS_DIR), name="uploads")
 app.mount("/static/storage", StaticFiles(directory=settings.DATA_DIR / "storage"), name="storage")
 app.mount("/static/photos", StaticFiles(directory=settings.PHOTOS_DIR), name="photos")
-app.mount("/static/graphics/user-graphics", StaticFiles(directory=settings.DATA_DIR / "graphics" / "user-graphics"), name="user-graphics")
+# Note: Per-user graphics are served via custom endpoint below, not static mount
 
 # Ensure temp/download directory exists at startup
 settings.DOWNLOAD_TMP_DIR.mkdir(parents=True, exist_ok=True)
+
+# Custom endpoint to serve per-user graphics
+from fastapi.responses import FileResponse
+from pathlib import Path
+
+@app.get("/static/graphics/user_{user_id}/{filename}")
+async def serve_user_graphic(user_id: int, filename: str):
+    """Serve user-specific graphics."""
+    file_path = settings.DATA_DIR / "graphics" / f"user_{user_id}" / filename
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Graphic not found")
+    return FileResponse(file_path)
+
+@app.get("/static/graphics/public/{filename}")
+async def serve_public_graphic(filename: str):
+    """Serve public graphics."""
+    file_path = settings.DATA_DIR / "graphics" / "public" / filename
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Graphic not found")
+    return FileResponse(file_path)
 
 # Initialize database on startup
 @app.on_event("startup")

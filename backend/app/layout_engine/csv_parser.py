@@ -13,7 +13,8 @@ from .models import ContentJSON, SlotContent
 def parse_csv_to_content(
     csv_data: str,
     column_mapping: Dict[str, str],
-    has_header: bool = True
+    has_header: bool = True,
+    user_id: int = None
 ) -> ContentJSON:
     """
     Parse CSV data and map columns to element IDs.
@@ -59,7 +60,11 @@ def parse_csv_to_content(
                         if value.lower().endswith(('.png', '.jpg', '.jpeg', '.svg')):
                             # Check if column name suggests it's a graphic
                             if 'graphic' in csv_col.lower() or 'image' in csv_col.lower():
-                                value = f"/static/graphics/user-graphics/{value}"
+                                # Use user-specific path if user_id provided, otherwise use public
+                                if user_id:
+                                    value = f"/static/graphics/user_{user_id}/{value}"
+                                else:
+                                    value = f"/static/graphics/public/{value}"
                                 print(f"[CSV PARSER] Converted graphic: {row[csv_col]} -> {value}", flush=True)
                     
                     if slot_index == 0:
