@@ -29,7 +29,14 @@ def hash_password(password: str) -> str:
     # Pre-hash with SHA256 to get a fixed-length string (always 64 hex chars)
     # This avoids bcrypt's 72-byte limit while maintaining security
     sha256_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
-    return pwd_context.hash(sha256_hash)
+    print(f"[AUTH] Hashing password: original_len={len(password)}, sha256_len={len(sha256_hash)}, sha256_bytes={len(sha256_hash.encode('utf-8'))}", flush=True)
+    try:
+        result = pwd_context.hash(sha256_hash)
+        print(f"[AUTH] Hash successful", flush=True)
+        return result
+    except Exception as e:
+        print(f"[AUTH ERROR] Hash failed: {e}", flush=True)
+        raise
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
