@@ -51,6 +51,17 @@ def parse_csv_to_content(
             for csv_col, element_id in column_mapping.items():
                 if csv_col in row:
                     value = row[csv_col]
+                    
+                    # Handle graphics: if value is just a filename (e.g., "Cat.png"), 
+                    # convert to full path
+                    if value and not value.startswith('/') and not value.startswith('http'):
+                        # Check if it's likely a graphic filename
+                        if value.lower().endswith(('.png', '.jpg', '.jpeg', '.svg')):
+                            # Check if column name suggests it's a graphic
+                            if 'graphic' in csv_col.lower() or 'image' in csv_col.lower():
+                                value = f"/static/graphics/user-graphics/{value}"
+                                print(f"[CSV PARSER] Converted graphic: {row[csv_col]} -> {value}", flush=True)
+                    
                     if slot_index == 0:
                         print(f"[CSV PARSER] Mapping '{csv_col}' -> '{element_id}' = '{value}'")
                     slot_data[element_id] = value
