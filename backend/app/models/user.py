@@ -4,7 +4,7 @@ User model for authentication and graphics management.
 
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from ..database import Base
 
@@ -34,7 +34,7 @@ class Graphic(Base):
     __tablename__ = "graphics"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
     filename = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
     file_size = Column(Integer, nullable=False)  # bytes
