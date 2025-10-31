@@ -3,6 +3,7 @@ Simple session-based authentication for graphics management.
 """
 
 import secrets
+import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 from passlib.context import CryptContext
@@ -24,25 +25,18 @@ SESSION_EXPIRE_HOURS = 24 * 7  # 7 days
 
 
 def hash_password(password: str) -> str:
-    """Hash a password. Truncate to 72 bytes for bcrypt compatibility."""
-    # Bcrypt has a 72-byte limit, truncate at byte level
-    password_bytes = password.encode('utf-8')
-    if len(password_bytes) > 72:
-        # Truncate to 72 bytes, ensuring we don't break UTF-8 encoding
-        truncated_bytes = password_bytes[:72]
-        # Decode back, ignoring any broken characters at the end
-        password = truncated_bytes.decode('utf-8', errors='ignore')
-    return pwd_context.hash(password)
+    """Hash a password using SHA256 + bcrypt to avoid length issues."""
+    # Pre-hash with SHA256 to get a fixed-length string (always 64 hex chars)
+    # This avoids bcrypt's 72-byte limit while maintaining security
+    sha256_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    return pwd_context.hash(sha256_hash)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash."""
-    # Apply same truncation as hash_password
-    password_bytes = plain_password.encode('utf-8')
-    if len(password_bytes) > 72:
-        truncated_bytes = password_bytes[:72]
-        plain_password = truncated_bytes.decode('utf-8', errors='ignore')
-    return pwd_context.verify(plain_password, hashed_password)
+    # Apply same SHA256 pre-hashing as hash_password
+    sha256_hash = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
+    return pwd_context.verify(sha256_hash, hashed_password)
 
 
 def create_session(user_id: int) -> str:
