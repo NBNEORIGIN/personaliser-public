@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .settings import settings
-from .routers import catalog, ingest_amazon, jobs, assets, layout_engine
+from .routers import catalog, ingest_amazon, jobs, assets, layout_engine, auth_router
+from .database import init_db
 from .utils import sku_map
 import shutil
 
@@ -29,6 +30,7 @@ app.include_router(ingest_amazon.router, prefix=settings.API_PREFIX)
 app.include_router(jobs.router, prefix=settings.API_PREFIX)
 app.include_router(assets.router, prefix=settings.API_PREFIX)
 app.include_router(layout_engine.router)  # Layout engine (has its own prefix)
+app.include_router(auth_router.router)  # Authentication
 
 # Static mounts for previews and jobs artifacts
 app.mount("/static/previews", StaticFiles(directory=settings.PREVIEWS_DIR), name="previews")
@@ -40,6 +42,13 @@ app.mount("/static/graphics/user-graphics", StaticFiles(directory=settings.DATA_
 
 # Ensure temp/download directory exists at startup
 settings.DOWNLOAD_TMP_DIR.mkdir(parents=True, exist_ok=True)
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup."""
+    init_db()
+    print("[STARTUP] Database initialized", flush=True)
 
 # Optionally clear photos cache on start
 try:
