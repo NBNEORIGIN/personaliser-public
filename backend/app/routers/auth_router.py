@@ -35,7 +35,6 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
-    created_at: str
     
     class Config:
         from_attributes = True
@@ -85,18 +84,26 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         )
     
     # Create new user
-    user = User(
-        username=request.username,
-        email=request.email,
-        password_hash=hash_password(request.password)
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    print(f"[AUTH] New user registered: {user.username} ({user.email})", flush=True)
-    
-    return user
+    try:
+        user = User(
+            username=request.username,
+            email=request.email,
+            password_hash=hash_password(request.password)
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        print(f"[AUTH] New user registered: {user.username} ({user.email})", flush=True)
+        
+        return user
+    except Exception as e:
+        db.rollback()
+        print(f"[AUTH ERROR] Failed to create user: {str(e)}", flush=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create user: {str(e)}"
+        )
 
 
 @router.post("/login")
