@@ -882,26 +882,38 @@
         }
         
         async function loadGraphics() {
-            if (!currentUser) return;
+            if (!currentUser) {
+                console.log('[GRAPHICS] Not logged in, skipping load');
+                return;
+            }
+            
+            console.log('[GRAPHICS] Loading graphics for user:', currentUser.username);
             
             try {
                 // Load user graphics
                 const userResponse = await fetch('/api/graphics/list', {
                     credentials: 'include'
                 });
+                console.log('[GRAPHICS] User graphics response status:', userResponse.status);
+                
                 if (userResponse.ok) {
                     userGraphics = await userResponse.json();
+                    console.log('[GRAPHICS] Loaded user graphics:', userGraphics.length);
                     renderGraphicsGrid();
+                } else {
+                    const error = await userResponse.text();
+                    console.error('[GRAPHICS] Failed to load user graphics:', error);
                 }
                 
                 // Load public graphics
                 const publicResponse = await fetch('/api/graphics/public');
                 if (publicResponse.ok) {
                     publicGraphics = await publicResponse.json();
+                    console.log('[GRAPHICS] Loaded public graphics:', publicGraphics.length);
                     renderPublicGraphicsGrid();
                 }
             } catch (error) {
-                console.error('Error loading graphics:', error);
+                console.error('[GRAPHICS] Error loading graphics:', error);
             }
         }
         
