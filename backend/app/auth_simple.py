@@ -4,20 +4,13 @@ Simple session-based authentication for graphics management.
 
 import secrets
 import hashlib
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status, Cookie
 from sqlalchemy.orm import Session
 from .database import get_db
 from .models.user import User
-
-# Password hashing - configure bcrypt to truncate automatically
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__truncate_error=False  # Don't raise error, just truncate
-)
 
 # Session storage (in-memory for now, could move to Redis)
 sessions = {}  # session_token -> user_id
@@ -29,21 +22,20 @@ def hash_password(password: str) -> str:
     # Pre-hash with SHA256 to get a fixed-length string (always 64 hex chars)
     # This avoids bcrypt's 72-byte limit while maintaining security
     sha256_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
-    print(f"[AUTH] Hashing password: original_len={len(password)}, sha256_len={len(sha256_hash)}, sha256_bytes={len(sha256_hash.encode('utf-8'))}", flush=True)
-    try:
-        result = pwd_context.hash(sha256_hash)
-        print(f"[AUTH] Hash successful", flush=True)
-        return result
-    except Exception as e:
-        print(f"[AUTH ERROR] Hash failed: {e}", flush=True)
-        raise
+    print(f"[AUTH] Hashing password: original_len={len(password)}, sha256_len={len(sha256_hash)}", flush=True)
+    
+    # Use bcrypt directly
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(sha256_hash.encode('utf-8'), salt)
+    print(f"[AUTH] Hash successful", flush=True)
+    return hashed.decode('utf-8')
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash."""
     # Apply same SHA256 pre-hashing as hash_password
     sha256_hash = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
-    return pwd_context.verify(sha256_hash, hashed_password)
+    return bcrypt.checkpw(sha256_hash.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 def create_session(user_id: int) -> str:
