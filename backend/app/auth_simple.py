@@ -11,8 +11,12 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .models.user import User
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing - configure bcrypt to truncate automatically
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__truncate_error=False  # Don't raise error, just truncate
+)
 
 # Session storage (in-memory for now, could move to Redis)
 sessions = {}  # session_token -> user_id
