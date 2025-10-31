@@ -20,17 +20,25 @@ SESSION_EXPIRE_HOURS = 24 * 7  # 7 days
 
 
 def hash_password(password: str) -> str:
-    """Hash a password. Truncate to 72 characters for bcrypt compatibility."""
-    # Bcrypt has a 72-byte limit, so truncate to 72 characters to be safe
-    truncated_password = password[:72]
-    return pwd_context.hash(truncated_password)
+    """Hash a password. Truncate to 72 bytes for bcrypt compatibility."""
+    # Bcrypt has a 72-byte limit, truncate at byte level
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        # Truncate to 72 bytes, ensuring we don't break UTF-8 encoding
+        truncated_bytes = password_bytes[:72]
+        # Decode back, ignoring any broken characters at the end
+        password = truncated_bytes.decode('utf-8', errors='ignore')
+    return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash."""
-    # Truncate to match what was hashed
-    truncated_password = plain_password[:72]
-    return pwd_context.verify(truncated_password, hashed_password)
+    # Apply same truncation as hash_password
+    password_bytes = plain_password.encode('utf-8')
+    if len(password_bytes) > 72:
+        truncated_bytes = password_bytes[:72]
+        plain_password = truncated_bytes.decode('utf-8', errors='ignore')
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def create_session(user_id: int) -> str:
