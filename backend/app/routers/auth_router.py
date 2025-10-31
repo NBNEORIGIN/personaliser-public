@@ -41,7 +41,7 @@ class UserResponse(BaseModel):
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(request: RegisterRequest, db: Session = Depends(get_db)):
+async def register(request: RegisterRequest, response: Response, db: Session = Depends(get_db)):
     """
     Register a new user account.
     
@@ -96,7 +96,17 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
         
-        print(f"[AUTH] New user registered: {user.username} ({user.email})", flush=True)
+        # Create session and set cookie (auto-login after registration)
+        session_token = create_session(user.id)
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            max_age=60 * 60 * 24 * 7,  # 7 days
+            samesite="lax"
+        )
+        
+        print(f"[AUTH] New user registered and logged in: {user.username} ({user.email})", flush=True)
         
         return user
     except Exception as e:
