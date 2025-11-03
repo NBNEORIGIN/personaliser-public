@@ -353,12 +353,14 @@ def render_graphic_element(
     # If source is a PNG/JPG/JPEG, render as image instead of SVG
     if source and source.lower().endswith(('.png', '.jpg', '.jpeg')):
         # Render as embedded image
+        # Use preserveAspectRatio="none" to fill the entire element area
+        # This is important for transparent PNGs that should match the element size exactly
         image_svg = (
             f'<image id="{element_id}" '
             f'x="{element.x_mm}mm" y="{element.y_mm}mm" '
             f'width="{element.w_mm}mm" height="{element.h_mm}mm" '
             f'href="{source}" '
-            f'preserveAspectRatio="xMidYMid meet" />'
+            f'preserveAspectRatio="none" />'
         )
         print(f"[RENDER GRAPHIC] Generated image tag: {image_svg[:100]}...", flush=True)
         return image_svg
