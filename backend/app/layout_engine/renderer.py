@@ -355,10 +355,11 @@ def render_graphic_element(
         # Render as embedded image
         # Use preserveAspectRatio="none" to fill the entire element area
         # This is important for transparent PNGs that should match the element size exactly
+        # Note: Use unitless numbers (not "mm") since parent SVG viewBox is in mm coordinates
         image_svg = (
             f'<image id="{element_id}" '
-            f'x="{element.x_mm}mm" y="{element.y_mm}mm" '
-            f'width="{element.w_mm}mm" height="{element.h_mm}mm" '
+            f'x="{element.x_mm}" y="{element.y_mm}" '
+            f'width="{element.w_mm}" height="{element.h_mm}" '
             f'href="{source}" '
             f'preserveAspectRatio="none" />'
         )
