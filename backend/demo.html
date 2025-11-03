@@ -2659,6 +2659,9 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                     <label style="display: block; font-size: 11px; margin-bottom: 2px;">Height (mm)</label>
                     <input type="number" value="${element.h_mm}" onchange="updateElementProperty('h_mm', this.value)" style="width: 100%; padding: 4px;">
                 </div>
+                ${element.type === 'graphic' || element.type === 'image' ? `
+                    <button onclick="snapToPartSize()" style="width: 100%; margin-bottom: 10px; background: #3498db; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px;">📐 Snap to Part Size</button>
+                ` : ''}
                 ${element.type === 'text' ? `
                     <div style="margin-bottom: 5px;">
                         <label style="display: block; font-size: 11px; margin-bottom: 2px;">Font Size (pt)</label>
@@ -2721,6 +2724,23 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
             const element = templateElements[selectedElement];
             if (element.type === 'image') {
                 element.border_width_mm = parseFloat(value);
+                renderTemplateCanvas();
+            }
+        }
+        
+        function snapToPartSize() {
+            if (selectedElement === null) return;
+            const element = templateElements[selectedElement];
+            if (element.type === 'graphic' || element.type === 'image') {
+                const partWidth = parseFloat(document.getElementById('partWidth').value);
+                const partHeight = parseFloat(document.getElementById('partHeight').value);
+                
+                element.x_mm = 0;
+                element.y_mm = 0;
+                element.w_mm = partWidth;
+                element.h_mm = partHeight;
+                
+                updateElementProperties();
                 renderTemplateCanvas();
             }
         }
