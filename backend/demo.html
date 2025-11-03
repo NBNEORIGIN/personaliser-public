@@ -1587,8 +1587,8 @@
                 const data = await response.json();
                 alert(`✅ Uploaded: ${data.filename}\nPath: ${data.path}`);
                 
-                // Refresh graphics list
-                loadGraphics();
+                // Refresh graphics list (old system)
+                loadGraphicsOld();
                 
                 // Clear file input
                 fileInput.value = '';
@@ -1598,7 +1598,8 @@
             }
         }
         
-        async function loadGraphics() {
+        // OLD loadGraphics function - DEPRECATED, using auth-based version instead
+        async function loadGraphicsOld() {
             try {
                 const response = await fetch(`${API_BASE}/graphics`);
                 if (!response.ok) {
