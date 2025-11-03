@@ -204,6 +204,8 @@ async def upload_csv(
         # Get base URL for absolute image paths
         base_url = str(request.base_url).rstrip('/')
         
+        print(f"[CSV UPLOAD] Received user_id: {user_id}, base_url: {base_url}", flush=True)
+        
         # Parse CSV to content (pass user_id and base_url for graphics resolution)
         content = parse_csv_to_content(csv_data, mapping, has_header, user_id, base_url)
         
