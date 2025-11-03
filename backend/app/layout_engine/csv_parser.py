@@ -53,19 +53,25 @@ def parse_csv_to_content(
                 if csv_col in row:
                     value = row[csv_col]
                     
-                    # Handle graphics: if value is just a filename (e.g., "Cat.png"), 
+                    # Handle graphics: if value is just a filename (e.g., "Cat.png" or "Cat"), 
                     # convert to full path
                     if value and not value.startswith('/') and not value.startswith('http'):
-                        # Check if it's likely a graphic filename
-                        if value.lower().endswith(('.png', '.jpg', '.jpeg', '.svg')):
-                            # Check if column name suggests it's a graphic
-                            if 'graphic' in csv_col.lower() or 'image' in csv_col.lower():
-                                # Use user-specific path if user_id provided, otherwise use public
-                                if user_id:
-                                    value = f"/static/graphics/user_{user_id}/{value}"
-                                else:
-                                    value = f"/static/graphics/public/{value}"
-                                print(f"[CSV PARSER] Converted graphic: {row[csv_col]} -> {value}", flush=True)
+                        # Check if column name suggests it's a graphic
+                        is_graphic_column = 'graphic' in csv_col.lower() or 'image' in csv_col.lower()
+                        
+                        if is_graphic_column:
+                            # If no extension, try common image extensions
+                            if not value.lower().endswith(('.png', '.jpg', '.jpeg', '.svg')):
+                                # Try adding .png first (most common)
+                                value = f"{value}.png"
+                                print(f"[CSV PARSER] No extension found, trying: {value}", flush=True)
+                            
+                            # Use user-specific path if user_id provided, otherwise use public
+                            if user_id:
+                                value = f"/static/graphics/user_{user_id}/{value}"
+                            else:
+                                value = f"/static/graphics/public/{value}"
+                            print(f"[CSV PARSER] Converted graphic: {row[csv_col]} -> {value}", flush=True)
                     
                     if slot_index == 0:
                         print(f"[CSV PARSER] Mapping '{csv_col}' -> '{element_id}' = '{value}'")
