@@ -2141,6 +2141,11 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 formData.append('page', pageNum.toString());
                 formData.append('items_per_page', slotsPerBed.toString());
                 
+                // Add user_id if logged in (for graphics resolution)
+                if (currentUser) {
+                    formData.append('user_id', currentUser.id);
+                }
+                
                 const response = await fetch(`${API_BASE}/upload/csv`, {
                     method: 'POST',
                     body: formData
@@ -2215,6 +2220,11 @@ Michael Brown,1948-2024,/static/photos/michael.jpg`;
                 formData.append('format', 'pdf');
                 formData.append('page', pageNum.toString());
                 formData.append('items_per_page', slotsPerBed.toString());
+                
+                // Add user_id if logged in (for graphics resolution)
+                if (currentUser) {
+                    formData.append('user_id', currentUser.id);
+                }
                 
                 const response = await fetch(`${API_BASE}/upload/csv`, {
                     method: 'POST',
