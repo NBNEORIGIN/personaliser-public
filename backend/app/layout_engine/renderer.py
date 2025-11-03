@@ -348,16 +348,20 @@ def render_graphic_element(
     # Use dynamic source if provided, otherwise use element's static source
     source = dynamic_source if dynamic_source else element.source
     
+    print(f"[RENDER GRAPHIC] Element: {element.id}, Source: {source}, Dynamic: {dynamic_source}", flush=True)
+    
     # If source is a PNG/JPG/JPEG, render as image instead of SVG
     if source and source.lower().endswith(('.png', '.jpg', '.jpeg')):
         # Render as embedded image
-        return (
+        image_svg = (
             f'<image id="{element_id}" '
             f'x="{element.x_mm}mm" y="{element.y_mm}mm" '
             f'width="{element.w_mm}mm" height="{element.h_mm}mm" '
             f'href="{source}" '
             f'preserveAspectRatio="xMidYMid meet" />'
         )
+        print(f"[RENDER GRAPHIC] Generated image tag: {image_svg[:100]}...", flush=True)
+        return image_svg
     
     # Try to load SVG from source
     svg_content = None
