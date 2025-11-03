@@ -4,7 +4,7 @@ REST API endpoints for template-driven layout engine.
 Provides HTTP interface for generating SVG and PDF outputs.
 """
 
-from fastapi import APIRouter, HTTPException, Response, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Response, UploadFile, File, Form, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, Dict
@@ -160,6 +160,7 @@ async def generate_pdf(request: GenerateRequest):
 
 @router.post("/upload/csv")
 async def upload_csv(
+    request: Request,
     file: UploadFile = File(...),
     template: str = Form(...),
     column_mapping: Optional[str] = Form(None),
@@ -200,8 +201,11 @@ async def upload_csv(
             element_ids = [e.id for e in template_obj.part.elements]
             mapping = auto_detect_mapping(csv_data, element_ids, has_header)
         
-        # Parse CSV to content (pass user_id for graphics resolution)
-        content = parse_csv_to_content(csv_data, mapping, has_header, user_id)
+        # Get base URL for absolute image paths
+        base_url = str(request.base_url).rstrip('/')
+        
+        # Parse CSV to content (pass user_id and base_url for graphics resolution)
+        content = parse_csv_to_content(csv_data, mapping, has_header, user_id, base_url)
         
         # Handle pagination if requested
         if page is not None and items_per_page is not None:

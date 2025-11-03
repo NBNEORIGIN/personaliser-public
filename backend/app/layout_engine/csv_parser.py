@@ -14,7 +14,8 @@ def parse_csv_to_content(
     csv_data: str,
     column_mapping: Dict[str, str],
     has_header: bool = True,
-    user_id: int = None
+    user_id: int = None,
+    base_url: str = ""
 ) -> ContentJSON:
     """
     Parse CSV data and map columns to element IDs.
@@ -68,9 +69,16 @@ def parse_csv_to_content(
                             
                             # Use user-specific path if user_id provided, otherwise use public
                             if user_id:
-                                value = f"/static/graphics/user_{user_id}/{value}"
+                                relative_path = f"/static/graphics/user_{user_id}/{value}"
                             else:
-                                value = f"/static/graphics/public/{value}"
+                                relative_path = f"/static/graphics/public/{value}"
+                            
+                            # Make absolute URL if base_url provided
+                            if base_url:
+                                value = f"{base_url}{relative_path}"
+                            else:
+                                value = relative_path
+                            
                             print(f"[CSV PARSER] Converted graphic: {row[csv_col]} -> {value}", flush=True)
                     
                     if slot_index == 0:
