@@ -6,8 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Build: 2025-10-28-11:02 -->
-    <title>Layout Engine Demo - Investor Preview v2.1</title>
+    <!-- Build: 2025-11-03-09:59 - Graphics Fix -->
+    <title>Layout Engine Demo - Investor Preview v2.2</title>
     <style>
         * {
             margin: 0;
@@ -732,6 +732,8 @@
     </div>
     
     <script>
+        console.log('=== DEMO PAGE LOADED - Build 2025-11-03-09:59 ===');
+        
         // Auto-detect API base URL (works locally and on Render)
         const API_BASE = window.location.origin + '/api/layout';
         
@@ -919,21 +921,40 @@
         
         function renderGraphicsGrid() {
             const grid = document.getElementById('graphicsGrid');
-            document.getElementById('graphicsCount').textContent = userGraphics.length;
+            const countElement = document.getElementById('graphicsCount');
+            
+            console.log('[RENDER] Rendering graphics grid, count:', userGraphics.length);
+            console.log('[RENDER] Graphics data:', userGraphics);
+            
+            if (!grid) {
+                console.error('[RENDER] Graphics grid element not found!');
+                return;
+            }
+            
+            if (!countElement) {
+                console.error('[RENDER] Graphics count element not found!');
+            } else {
+                countElement.textContent = userGraphics.length;
+            }
             
             if (userGraphics.length === 0) {
                 grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">No graphics yet. Upload some!</div>';
                 return;
             }
             
-            grid.innerHTML = userGraphics.map(g => `
-                <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: white; position: relative;">
-                    <img src="${g.url}" style="width: 100%; height: 100px; object-fit: contain; margin-bottom: 5px;" alt="${g.filename}">
-                    <div style="font-size: 11px; color: #666; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${g.filename}">${g.filename}</div>
-                    <div style="font-size: 10px; color: #999;">${(g.file_size / 1024).toFixed(1)} KB</div>
-                    <button onclick="deleteGraphic(${g.id})" style="position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px;">×</button>
-                </div>
-            `).join('');
+            grid.innerHTML = userGraphics.map(g => {
+                console.log('[RENDER] Rendering graphic:', g.filename, 'URL:', g.url);
+                return `
+                    <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: white; position: relative;">
+                        <img src="${g.url}" style="width: 100%; height: 100px; object-fit: contain; margin-bottom: 5px;" alt="${g.filename}" onerror="console.error('Failed to load image:', '${g.url}')">
+                        <div style="font-size: 11px; color: #666; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${g.filename}">${g.filename}</div>
+                        <div style="font-size: 10px; color: #999;">${(g.file_size / 1024).toFixed(1)} KB</div>
+                        <button onclick="deleteGraphic(${g.id})" style="position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px;">×</button>
+                    </div>
+                `;
+            }).join('');
+            
+            console.log('[RENDER] Graphics grid HTML updated');
         }
         
         function renderPublicGraphicsGrid() {
