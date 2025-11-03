@@ -328,39 +328,55 @@ def render_image_element(
 def render_graphic_element(
     element: GraphicElement,
     row: int,
-    col: int
+    col: int,
+    dynamic_source: Optional[str] = None
 ) -> str:
     """
-    Render a static graphic element by loading and inlining SVG.
+    Render a graphic element by loading and inlining SVG or embedding an image.
     
     Args:
         element: Graphic element definition
         row: Row index for ID generation
         col: Column index for ID generation
+        dynamic_source: Optional dynamic source path from CSV content (overrides element.source)
         
     Returns:
         SVG markup string
     """
     element_id = generate_unique_id("graphic", row, col, element.id)
     
+    # Use dynamic source if provided, otherwise use element's static source
+    source = dynamic_source if dynamic_source else element.source
+    
+    # If source is a PNG/JPG/JPEG, render as image instead of SVG
+    if source and source.lower().endswith(('.png', '.jpg', '.jpeg')):
+        # Render as embedded image
+        return (
+            f'<image id="{element_id}" '
+            f'x="{element.x_mm}mm" y="{element.y_mm}mm" '
+            f'width="{element.width_mm}mm" height="{element.height_mm}mm" '
+            f'href="{source}" '
+            f'preserveAspectRatio="xMidYMid meet" />'
+        )
+    
     # Try to load SVG from source
     svg_content = None
     try:
         # Handle different source formats
-        if element.source.startswith('<svg'):
+        if source.startswith('<svg'):
             # Inline SVG markup
-            svg_content = element.source
-        elif element.source.startswith('http://') or element.source.startswith('https://'):
+            svg_content = source
+        elif source.startswith('http://') or source.startswith('https://'):
             # URL - would need requests library, skip for now
             svg_content = None
         else:
             # File path
-            source_path = Path(element.source)
+            source_path = Path(source)
             if not source_path.is_absolute():
                 # Try relative to assets directory
                 from ..settings import settings
                 assets_dir = Path(settings.ASSETS_DIR) if hasattr(settings, 'ASSETS_DIR') else Path('assets')
-                source_path = assets_dir / element.source
+                source_path = assets_dir / source
             
             if source_path.exists():
                 svg_content = source_path.read_text(encoding='utf-8')
@@ -490,7 +506,9 @@ def render_part(
     # Render graphics
     for element, abs_x, abs_y in graphics:
         positioned_element = element.model_copy(update={"x_mm": abs_x, "y_mm": abs_y, "anchor_to": None})
-        svg_parts.append(render_graphic_element(positioned_element, row, col))
+        # Get dynamic graphic path from slot content if available
+        graphic_path = slot_content.get_content(element.id) if slot_content else None
+        svg_parts.append(render_graphic_element(positioned_element, row, col, graphic_path))
     
     return '\n'.join(svg_parts)
 
