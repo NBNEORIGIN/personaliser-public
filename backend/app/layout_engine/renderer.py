@@ -354,7 +354,7 @@ def render_graphic_element(
         return (
             f'<image id="{element_id}" '
             f'x="{element.x_mm}mm" y="{element.y_mm}mm" '
-            f'width="{element.width_mm}mm" height="{element.height_mm}mm" '
+            f'width="{element.w_mm}mm" height="{element.h_mm}mm" '
             f'href="{source}" '
             f'preserveAspectRatio="xMidYMid meet" />'
         )
