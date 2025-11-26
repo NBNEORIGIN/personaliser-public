@@ -2,6 +2,7 @@
 Authentication endpoints for user registration and login.
 """
 
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -14,7 +15,8 @@ from ..auth_simple import (
     verify_password,
     create_session,
     delete_session,
-    get_current_user
+    get_current_user,
+    get_current_admin
 )
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -35,6 +37,20 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
+    is_approved: bool
+    is_admin: bool
+    
+    class Config:
+        from_attributes = True
+
+
+class PendingUserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    is_approved: bool
+    is_admin: bool
+    created_at: str
     
     class Config:
         from_attributes = True
@@ -108,9 +124,16 @@ async def register(request: RegisterRequest, response: Response, db: Session = D
             secure=False  # Allow HTTP for development
         )
         
-        print(f"[AUTH] New user registered and logged in: {user.username} ({user.email})", flush=True)
+        print(f"[AUTH] New user registered (pending approval): {user.username} ({user.email})", flush=True)
         
-        return user
+        # Return user info with approval status
+        return UserResponse(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            is_approved=user.is_approved,
+            is_admin=user.is_admin
+        )
     except Exception as e:
         db.rollback()
         print(f"[AUTH ERROR] Failed to create user: {str(e)}", flush=True)
@@ -141,6 +164,13 @@ async def login(request: LoginRequest, response: Response, db: Session = Depends
             detail="Invalid username or password"
         )
     
+    # Check if account is approved (admins can always login)
+    if not user.is_approved and not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account pending approval. Please wait for admin approval."
+        )
+    
     # Verify password
     if not verify_password(request.password, user.password_hash):
         raise HTTPException(
@@ -169,7 +199,9 @@ async def login(request: LoginRequest, response: Response, db: Session = Depends
         "user": {
             "id": user.id,
             "username": user.username,
-            "email": user.email
+            "email": user.email,
+            "is_approved": user.is_approved,
+            "is_admin": user.is_admin
         }
     }
 
@@ -203,3 +235,152 @@ async def get_me(user: User = Depends(get_current_user)):
     - Current user object
     """
     return user
+
+
+# Admin endpoints for user management
+@router.get("/admin/pending-users")
+async def get_pending_users(
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of users pending approval (admin only).
+    
+    **Returns:**
+    - List of pending users
+    """
+    pending_users = db.query(User).filter(
+        User.is_approved == False,
+        User.is_admin == False
+    ).order_by(User.created_at.desc()).all()
+    
+    return {
+        "count": len(pending_users),
+        "users": [
+            {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "created_at": user.created_at.isoformat(),
+                "is_approved": user.is_approved
+            }
+            for user in pending_users
+        ]
+    }
+
+
+@router.post("/admin/approve-user/{user_id}")
+async def approve_user(
+    user_id: int,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Approve a pending user account (admin only).
+    
+    **Parameters:**
+    - `user_id`: ID of user to approve
+    
+    **Returns:**
+    - Success message
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    if user.is_approved:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already approved"
+        )
+    
+    user.is_approved = True
+    user.approved_at = datetime.utcnow()
+    db.commit()
+    
+    print(f"[AUTH ADMIN] User approved: {user.username} by admin {admin.username}", flush=True)
+    
+    return {
+        "success": True,
+        "message": f"User {user.username} approved successfully",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_approved": user.is_approved
+        }
+    }
+
+
+@router.post("/admin/reject-user/{user_id}")
+async def reject_user(
+    user_id: int,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Reject and delete a pending user account (admin only).
+    
+    **Parameters:**
+    - `user_id`: ID of user to reject
+    
+    **Returns:**
+    - Success message
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    if user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot reject admin users"
+        )
+    
+    username = user.username
+    db.delete(user)
+    db.commit()
+    
+    print(f"[AUTH ADMIN] User rejected and deleted: {username} by admin {admin.username}", flush=True)
+    
+    return {
+        "success": True,
+        "message": f"User {username} rejected and removed"
+    }
+
+
+@router.get("/admin/all-users")
+async def get_all_users(
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of all users (admin only).
+    
+    **Returns:**
+    - List of all users
+    """
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    
+    return {
+        "count": len(users),
+        "users": [
+            {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "is_approved": user.is_approved,
+                "is_admin": user.is_admin,
+                "is_active": user.is_active,
+                "created_at": user.created_at.isoformat(),
+                "approved_at": user.approved_at.isoformat() if user.approved_at else None
+            }
+            for user in users
+        ]
+    }

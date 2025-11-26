@@ -6,18 +6,47 @@ from .routers import catalog, ingest_amazon, jobs, assets, layout_engine, auth_r
 from .database import init_db
 from .utils import sku_map
 import shutil
+import os
+
+# Sentry error tracking
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+
+# Rate limiting
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from .middleware.rate_limit import limiter
+
+# Initialize Sentry if DSN is configured
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.SENTRY_ENVIRONMENT,
+        integrations=[FastApiIntegration()],
+        traces_sample_rate=0.1,  # 10% of transactions for performance monitoring
+    )
+    print(f"[STARTUP] Sentry initialized for {settings.SENTRY_ENVIRONMENT}", flush=True)
 
 # Cache bust: 2025-10-27-16:50 - Redeploy with upgraded tier (2GB RAM)
 app = FastAPI(title="Bed Optimised Batch Production API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Add rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS configuration - use environment variable for production
+allowed_origins = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").split(",")
+# Add default development origins if not in production
+if "localhost" in allowed_origins[0]:
+    allowed_origins.extend([
         "https://www.nbne.uk",
         "https://personaliser.vercel.app",
-        "http://localhost:3000",
         "http://localhost:8000"
-    ],
+    ])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -157,3 +186,26 @@ async def demo_debug():
         }
     else:
         return {"path": str(demo_path), "exists": False}
+
+
+@app.get("/admin")
+async def admin_dashboard():
+    """Serve admin dashboard HTML page"""
+    from fastapi.responses import FileResponse
+    from pathlib import Path
+    
+    # Use absolute path resolution
+    admin_path = Path(__file__).parent.parent / "admin_dashboard.html"
+    
+    if not admin_path.exists():
+        raise HTTPException(status_code=404, detail=f"Admin dashboard not found at {admin_path}")
+    
+    return FileResponse(
+        str(admin_path),
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )

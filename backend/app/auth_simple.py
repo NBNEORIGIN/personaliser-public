@@ -94,6 +94,13 @@ def get_current_user(
             detail="User not found or inactive"
         )
     
+    # Check if account is approved
+    if not user.is_approved and not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account pending approval. Please wait for admin approval."
+        )
+    
     return user
 
 
@@ -112,5 +119,21 @@ def get_current_user_optional(
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_active:
         return None
+    
+    return user
+
+
+def get_current_admin(
+    session_token: Optional[str] = Cookie(None, alias="session_token"),
+    db: Session = Depends(get_db)
+) -> User:
+    """Dependency to get current admin user."""
+    user = get_current_user(session_token, db)
+    
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
+        )
     
     return user

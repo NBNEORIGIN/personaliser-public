@@ -19,7 +19,10 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+    is_approved = Column(Boolean, default=False)  # Requires admin approval
+    is_admin = Column(Boolean, default=False)  # Admin privileges
     created_at = Column(DateTime, default=datetime.utcnow)
+    approved_at = Column(DateTime, nullable=True)  # When account was approved
     
     # Relationship to graphics
     graphics = relationship("Graphic", back_populates="user", cascade="all, delete-orphan")
