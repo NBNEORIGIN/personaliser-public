@@ -22,6 +22,8 @@ from ..packer.rect_packer import pack_first_fit, pack_paginated, Rect
 import csv
 from ..auth import get_current_user
 from ..utils.storage import get_storage
+from ..middleware.rate_limit import limiter
+from fastapi import Request
 
 router = APIRouter()
 
@@ -66,7 +68,8 @@ def preview_item(item: OrderItem = Body(...)):
     return PreviewResponse(job_id=job_id, preview_url=f"/static/previews/{job_id}/preview.png", warnings=warnings)
 
 @router.post("/jobs/generate", response_model=GenerateResponse)
-def generate_job(req: GenerateRequest, user=Depends(get_current_user)):
+@limiter.limit("10/minute")
+def generate_job(request: Request, req: GenerateRequest, user=Depends(get_current_user)):
     job_id = uuid4().hex[:8]
     template = TEMPLATE_MAP["PLAQUE-140x90-V1"]
     # QA all

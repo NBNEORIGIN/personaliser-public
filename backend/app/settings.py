@@ -39,10 +39,17 @@ class Settings(BaseSettings):
     AUTH0_ALGORITHMS: list[str] = ["RS256"]
     AUTH0_JWKS_CACHE_MIN: int = 600
     BYPASS_AUTH_FOR_TESTS: bool = True
+    # Monitoring
+    SENTRY_DSN: str | None = None
+    SENTRY_ENVIRONMENT: str = "development"
+    # Rate limiting
+    RATE_LIMIT_PER_MINUTE: int = 10
+    RATE_LIMIT_PER_HOUR: int = 100
 
     class Config:
         env_prefix = "APP_"
         env_file = str((Path(__file__).parent.parent / ".env"))
+        extra = "ignore"  # Ignore extra fields from .env file
 
 settings = Settings()
 

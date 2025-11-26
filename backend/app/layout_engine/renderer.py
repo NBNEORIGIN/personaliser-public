@@ -276,10 +276,12 @@ def render_image_element(
                 # Generate inline frame based on type
                 border_width = element.border_width_mm if hasattr(element, 'border_width_mm') else 1.5
                 frame_svg = generate_inline_frame(element.frame_source, element.w_mm, element.h_mm, radius, border_width)
+                # Replace frame ID
+                frame_svg_with_id = frame_svg.replace('id="frame"', f'id="{frame_id}"')
                 # Wrap in group with transform to position correctly
                 positioned_frame = (
                     f'<g transform="translate({element.x_mm}, {element.y_mm})">'
-                    f'{frame_svg.replace("id=\"frame\"", f"id=\"{frame_id}\"")}'
+                    f'{frame_svg_with_id}'
                     f'</g>'
                 )
                 svg_parts.append(positioned_frame)

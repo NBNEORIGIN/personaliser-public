@@ -11,6 +11,8 @@ from ..settings import settings
 from ..auth import get_current_user
 from ..utils.storage import get_storage, put_photo_local, upload_photo_and_presign, save_photo_local
 from ..utils.sku_map import get_meta_for_sku
+from ..utils.security import validate_upload, sanitize_filename
+from ..middleware.rate_limit import limiter
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +21,7 @@ router = APIRouter()
 
 
 @router.post("/ingest/amazon")
+@limiter.limit("20/minute")
 async def ingest_amazon(
     request: Request,
     file: Optional[UploadFile] = File(None),
@@ -41,6 +44,12 @@ async def ingest_amazon(
 
     # Load rows: from file upload, else explicit payload, else parse request.json
     if file is not None:
+        # Validate file before processing
+        await validate_upload(file)
+        # Sanitize filename
+        safe_filename = sanitize_filename(file.filename)
+        logger.info(f"Processing uploaded file: {safe_filename}")
+        
         raw = await file.read()
         text = raw.decode("utf-8", errors="ignore")
         headers, data_rows = parse_tsv(text)
